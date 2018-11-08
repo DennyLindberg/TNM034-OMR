@@ -9,11 +9,50 @@ function strout = tnm034(im)
 % Your program code.
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% Pre-processing (Grade 4/5)
+
+
+%% Geometric transform (Denny)
+
+    % Morphomoical operations
+
+
+%% Segmentation (Thobbe)
+
+% Detection
+
+% Thresholding
+
+    % level = graythrash(i);
+
+% Cleaning up
 
 
 
+    % L = bwlabel(BW,n)
+    % Stats = regionprops(c,properties)
+
+% Staff identification
+ 
+    % Locate and rotated to be horizontal
+    
+    % Horizontal projection
+    
+    % Hough transformation
+
+% Staff removal
+
+% labeling (Elias)
 
 
+
+%% Classification (Elias) 
+
+% Decision theory
+
+
+ 
+%% Symbolic description
 
 
 
