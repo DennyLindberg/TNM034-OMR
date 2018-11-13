@@ -21,6 +21,6 @@ function [alignedResult] = alignstaffshorizontally(image, bitmapThreshold)
     horizontalOffset = horizontalOffset * sign(Tavg);
     
     % Rotate the image
-    alignedResult = imrotate(image, -horizontalOffset, 'bicubic');
+    alignedResult = imrotate(image, -horizontalOffset, 'bicubic', 'crop');
 end
 

@@ -15,6 +15,12 @@ function strout = tnm034(im)
 %% Geometric transform (Denny)
 
     % Morphomoical operations
+    
+imagesrc = "images/im13s.jpg";
+notes = loadimage(imagesrc);
+notes = alignstaffshorizontally(notes, 0.8);
+notes = prepareforsegmentation(notes, 64, 0.5);
+imshow(notes);
 
 
 %% Segmentation (Thobbe)
