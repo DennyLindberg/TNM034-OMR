@@ -15,20 +15,15 @@ function strout = tnm034(im)
 %% Geometric transform (Denny)
 
     % Morphomoical operations
-    
-notesRotated = loadimage("images/im13s.jpg");
-notesRotated = alignstaffshorizontally(notesRotated, 0.8);
-notesRotated = prepareforsegmentation(notesRotated, 64, 0.5);
 
-notesBlurryPhoto = loadimage("images/im13c.jpg");
-notesBlurryPhoto = prepareforsegmentation(notesBlurryPhoto, 64, 0.5); 
+notesRotated = extractnotesfromphoto(loadimage("images/im10c.jpg"));
+%notesRotated = alignstaffshorizontally(notesRotated, 0.8);
 
-emphasizedNotes = emphasizenotes(loadimage("images/im13c.jpg"));
+notesBlurryPhoto = extractnotesfromphoto(loadimage("images/im13c.jpg"));
 
 figure;
-subplot(2,2,1); imshow(notesRotated);
-subplot(2,2,3); imshow(notesBlurryPhoto);
-subplot(2,2,4); imshow(emphasizedNotes);
+subplot(1,2,1); imshow(notesRotated);
+subplot(1,2,2); imshow(notesBlurryPhoto);
 
 
 %% Segmentation (Thobbe)
