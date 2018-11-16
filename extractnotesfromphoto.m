@@ -1,7 +1,17 @@
 % Attempts to isolate notes from the background
 function [result] = extractnotesfromphoto(image)
+    % Separate background and notes by using morphological operations
     background = imclose(image, strel('Disk',10));
     extractedNotes = imsubtract(background, image);
-    result = 1.0-imadjust(extractedNotes, [0.1, 0.5]);  % these values are arbitrary (push midtones further towards darks and lights, increasing contrast)
+    
+    % Create a convex hull mask around the notes
+    decentThreshold = graythresh(extractedNotes);
+    notesBW = extractedNotes < decentThreshold;
+    hullMask = bwconvhull(1-notesBW);
+
+    % Use the hull mask to improve the contrast around the notes and erase
+    % the fragments of the background
+    result = ones(size(image));
+    result(hullMask) = 1.0-imadjust(extractedNotes(hullMask), [0.05, 0.5]);
 end
 

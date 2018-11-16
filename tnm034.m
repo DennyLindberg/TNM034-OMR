@@ -16,14 +16,14 @@ function strout = tnm034(im)
 
     % Morphomoical operations
 
-notesRotated = extractnotesfromphoto(loadimage("images/im10c.jpg"));
-%notesRotated = alignstaffshorizontally(notesRotated, 0.8);
+notesRotated = extractnotesfromphoto(loadimage('Images/im1s.jpg'));
+notesRotated = alignstaffshorizontally(notesRotated);
 
-notesBlurryPhoto = extractnotesfromphoto(loadimage("images/im13c.jpg"));
+notesBlurry = extractnotesfromphoto(loadimage('Images/im13c.jpg'));
 
 figure;
 subplot(1,2,1); imshow(notesRotated);
-subplot(1,2,2); imshow(notesBlurryPhoto);
+subplot(1,2,2); imshow(notesBlurry);
 
 
 %% Segmentation (Thobbe)
