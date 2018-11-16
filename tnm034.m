@@ -28,30 +28,33 @@ subplot(1,2,2); imshow(notesBlurry);
 
 %% Segmentation (Thobbe)
 
-% Detection
+% Staff 
+    %identification
+    % Locate and rotate to be horizontal
+    % Horizontal projection
+    % Save staff position
+    % Staff removal
 
-% Thresholding
-
+%Binary
+    % Thresholding
     % level = graythrash(i);
 
-% Cleaning up
+% Cleaning up (remove false objects)
 
+% Correlation and template matching
 
-
-    % L = bwlabel(BW,n)
-    % Stats = regionprops(c,properties)
-
-% Staff identification
- 
-    % Locate and rotated to be horizontal
+C = normxcorr2(template, 1-notesRotated);
     
-    % Horizontal projection
     
-    % Hough transformation
 
-% Staff removal
 
 % labeling (Elias)
+
+% L = bwlabel(BW,n)
+% Stats = regionprops(c,properties)
+
+
+    %notes2text
 
 
 
@@ -60,6 +63,8 @@ subplot(1,2,2); imshow(notesBlurry);
 
 finalimage = findNotes('Images\im1s.jpg','Templates\templateLow.png');
 
+
+
 % Decision theory
 %%
 org = 'Images\im1s.jpg';
@@ -67,11 +72,22 @@ org = 'Images\im1s.jpg';
 temp = 'Templates\templateHigh2.png';
 
 
+
+
+
 template = im2double(imread(temp));
 level = graythresh(template);
 template = im2bw(template,level);
 template = 1-template;
 
+
+
+
+imagesc(C);
+colormap default;
+
+
+%%
 orgImg = im2double(imread(org));
 level = graythresh(orgImg);
 orgImg = im2bw(orgImg,level);
@@ -114,7 +130,6 @@ radii = diameters/2;
 
 %%
 %bwlabel
-
 
 
 
