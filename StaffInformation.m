@@ -15,7 +15,20 @@ j = locs(:) < staffs(:);
 staffRows = j.*locs;
 staffRows(staffRows==0) = [];  
 
+a= [];
+position = 1;
+for p = 1:(length(staffRows)-1)
+    if(mod(p,5) == 0)
+        position = position+1; 
+    end
+    a(position) = staffRows(position+1)-staffRows(position);
+    if(mod(p,5) ~= 0)
+   position = position + 1;
+    end 
+end 
+a = a';
+a(a==0) = [];
 
 StaffDistance = staffRows(2)-staffRows(1);
-staffPosition = staffRows; 
+staffPosition = sum(a) / length(a);
 end
