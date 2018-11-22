@@ -1,5 +1,5 @@
 % Attempts to isolate notes from the background
-function [result] = extractnotesfromphoto(image)
+function [result, extractedNotes, background, hullMask] = extractnotesfromphoto(image)
     % Separate background and notes by using morphological operations
     background = imclose(image, strel('Disk',10));
     extractedNotes = imsubtract(background, image);
