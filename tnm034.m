@@ -33,7 +33,7 @@ subplot(1,2,2); imshow(notesBlurry);
     % Locate and rotate to be horizontal
     % Horizontal projection
     % Save staff position
-    % Staff removal
+    % Staff removal 
 
 %Binary
     % Thresholding
