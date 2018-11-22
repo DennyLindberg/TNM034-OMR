@@ -15,8 +15,8 @@ function strout = tnm034(im)
 %% Geometric transform (Denny)
 
 % Morphomoical operations
-im = 'Images/im3s.jpg';
-original = loadimage('Images/im3s.jpg');
+im = 'Images/TestStaff.jpg';
+original = loadimage(im);
 original = extractnotesfromphoto(original);
 % Locate and rotate to be horizontal
 original = alignstaffshorizontally(original);
@@ -38,7 +38,8 @@ original = alignstaffshorizontally(original);
     sheet = removeStaff(original);
     
     % Save staff position
-
+    [staffPosition, staffDistance] = StaffInformation(original);
+    staffSize = (staffDistance - 10)/10;
 
 %% Binary
     % Thresholding
@@ -47,8 +48,8 @@ original = alignstaffshorizontally(original);
 % Cleaning up (remove false objects)
 
 % Correlation and template matching
-tempImage = 'Templates\templateHigh2.png';
-template = createTemplate(tempImage, 0.9);
+tempImage = 'Templates\templateHigh3.png';
+template = createTemplate(tempImage, 1.0+staffSize);
 noteheads = extractNoteheads(original,template);
 
 
