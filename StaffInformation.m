@@ -29,6 +29,6 @@ end
 a = a';
 a(a==0) = [];
 
-StaffDistance = staffRows(2)-staffRows(1);
-staffPosition = sum(a) / length(a);
+StaffDistance = sum(a) / length(a);
+staffPosition = a;
 end
