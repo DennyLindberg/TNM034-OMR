@@ -14,41 +14,58 @@ function strout = tnm034(im)
 
 %% Geometric transform (Denny)
 
-    % Morphomoical operations
+% Morphomoical operations
+im = 'Images/TestStaff.jpg';
+original = loadimage(im);
+original = extractnotesfromphoto(original);
+% Locate and rotate to be horizontal
+original = alignstaffshorizontally(original);
 
-notesRotated = extractnotesfromphoto(loadimage('Images/im1s.jpg'));
-notesRotated = alignstaffshorizontally(notesRotated);
+%notesBlurry = extractnotesfromphoto(loadimage('Images/im13c.jpg'));
 
-notesBlurry = extractnotesfromphoto(loadimage('Images/im13c.jpg'));
-
-figure;
-subplot(1,2,1); imshow(notesRotated);
-subplot(1,2,2); imshow(notesBlurry);
+%figure;
+%subplot(1,2,1); imshow(notesRotated);
+%subplot(1,2,2); imshow(notesBlurry);
 
 
 %% Segmentation (Thobbe)
 
 % Staff 
     % identification
-    % Locate and rotate to be horizontal
     % Horizontal projection
-    % Save staff position
-    % Staff removal
 
-%Binary
+    % Staff removal
+    sheet = removeStaff(original);
+    
+    % Save staff position
+    [staffPosition, staffDistance] = StaffInformation(original);
+    staffSize = (staffDistance - 10)/10;
+
+%% Binary
     % Thresholding
     % level = graythrash(i);
 
 % Cleaning up (remove false objects)
 
 % Correlation and template matching
+tempImage = 'Templates\templateHigh3.png';
+template = createTemplate(tempImage, 1.0+staffSize);
+noteheads = extractNoteheads(original,template);
 
-C = normxcorr2(template, 1-notesRotated);
+
+%C = normxcorr2(template, 1-notesRotated);
     
 % labeling (Elias)
 
-% L = bwlabel(BW,n)
-% Stats = regionprops(c,properties)
+placeCentroids(noteheads,original);
+%%
+ L = bwlabel(noteheads,4);
+ Lmax = max(max(L));
+ %L(L~=2) = 0;
+
+ grad = L ./ max(max(L));
+ imagesc(grad);
+ colormap hot;
 
 
 %% Classification (Elias) 
@@ -59,7 +76,9 @@ finalimage = findNotes('Images\im1s.jpg','Templates\templateLow.png');
 
 %% Symbolic description
 
-
+%TODO:
+% Automatic scaling for template
+% Save staff position
 
 
 
