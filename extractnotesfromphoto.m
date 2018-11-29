@@ -1,8 +1,9 @@
 % Attempts to isolate notes from the background
 function [notes, background, hullMask, notesBW] = extractnotesfromphoto(image)
     % Separate background and notes by using morphological operations
-    diskSize = floor(min(size(image))/100);               % Set disk size to 1% of smallest image dimension
-    background = imclose(image, strel('Disk',diskSize));  % close gaps/dark regions = remove notes = keep background
+    imageSize = size(image);
+    diskSize = floor(min(imageSize(:))/75);               
+    background = imclose(image, strel('Disk', diskSize)); % close gaps/dark regions = remove notes = keep background
     notes = imsubtract(background, image);                % subtract the image WITH notes from background = keep notes (notes are close to 0 and thus not subtracted)
     
     % Create a convex hull mask around the notes
