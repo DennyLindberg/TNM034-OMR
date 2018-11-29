@@ -9,27 +9,89 @@ function strout = tnm034(im)
 % Your program code.
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
+imagePath = 'Images/TestStaff.jpg';
+drawDebug_alternatingStaffs = true;
+
 %% Pre-processing (Grade 4/5)
 
 
 %% Geometric transform (Denny)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Load image and remove background
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+original = imread(imagePath);
+originalgray = im2double(rgb2gray(original)); 
+[image, region] = removeBackground(originalgray);   
+image = image(region(2):region(4), region(1):region(3));
 
-% Morphomoical operations
-im = 'Images/TestStaff.jpg';
-original = loadimage(im);
-original = extractnotesfromphoto(original);
-% Locate and rotate to be horizontal
-original = alignstaffshorizontally(original);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Extract alpha of staff lines and create an enclosing
+% mask for each staff.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+lineSearch_angleLimit = 10;
+lineSearch_angleStep = 1;
+lineSearch_minimumLength = round(size(image,2)*0.4);
 
-%notesBlurry = extractnotesfromphoto(loadimage('Images/im13c.jpg'));
+% Expand image, otherwise the structuring element might fail near the corners
+paddingWidth = round(lineSearch_minimumLength*0.2);
+paddingHeight = round(paddingWidth*0.2);
+image = padarray(image, [paddingHeight, paddingWidth], 1, 'both');
 
-%figure;
-%subplot(1,2,1); imshow(notesRotated);
-%subplot(1,2,2); imshow(notesBlurry);
+% Attempt to extract the masks
+staffLinesAlpha = getLinesAlphaByAngle(image, lineSearch_angleLimit, lineSearch_angleStep, lineSearch_minimumLength);
+staffsMask = imclose(staffLinesAlpha, strel('disk', 16, 4));
+staffsMask = (staffsMask > graythresh(staffsMask));
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Use mask of staffs to detect perspective transform
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+perspective = estimatePerspectiveTransform(staffsMask);
+perspectiveInverse = invert(perspective);
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Apply perspective correction to image and alpha
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+image = 1-imwarp(1-image, perspectiveInverse, 'cubic');
+staffLinesAlpha = imwarp(staffLinesAlpha, perspectiveInverse, 'cubic');
+staffsMask = imclose(staffLinesAlpha, strel('disk', 16, 4));
+staffsMask = (staffsMask > graythresh(staffsMask));
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Split image into a separate segment for each staff
+% based on the mask.
+%
+% staff (struct)
+%   .image      bitmap containing notes
+%   .mask       logical mask which wraps around the five major staff lines
+%   .beginY     top of first staff line
+%   .endY       bottom of fifth staff line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[staffs, staffCount] = splitStaffsBasedOnMask(image, staffsMask);
+
+
+if drawDebug_alternatingStaffs
+    for k=1:staffCount
+        staffs(k).image = 1-(1-staffs(k).image)*0.2;
+        staffs(k).image(staffs(k).staffBeginY, :) = 0;
+        staffs(k).image(staffs(k).staffEndY, :) = 0;
+
+        % invert alternating
+        if ~mod(k,2)
+            staffs(k).image = 1-staffs(k).image;
+        end
+    end
+    figure;
+    imshow(vertcat(staffs.image));
+end
+
 
 
 %% Segmentation (Thobbe)
-
 % Staff 
     % identification
     % Horizontal projection

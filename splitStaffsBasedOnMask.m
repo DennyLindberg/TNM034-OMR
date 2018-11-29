@@ -97,8 +97,8 @@ function [individualStaffs, staffCount] = splitStaffsBasedOnMask(image, staffsMa
         
         % New bounding box width is the width of the image segment.
         % New height is the same but has the vertical cut as origin.
-        staff.staffBeginY = bboxes(i).y1-yBegin;
-        staff.staffEndY = bboxes(i).y2-yBegin;
+        staff.beginY = bboxes(i).y1-yBegin;
+        staff.endY = bboxes(i).y2-yBegin;
         
         individualStaffs = [individualStaffs; staff];
     end
