@@ -1,8 +1,8 @@
 % Attempts to isolate notes from the background
-function [notes, background, hullMask, notesBW] = extractnotesfromphoto(image)
+function [notes, notesRegion] = removeBackground(image)
     % Separate background and notes by using morphological operations
     imageSize = size(image);
-    diskSize = floor(min(imageSize(:))/75);               
+    diskSize = floor(imageSize(1,2)/100);               
     background = imclose(image, strel('Disk', diskSize)); % close gaps/dark regions = remove notes = keep background
     notes = imsubtract(background, image);                % subtract the image WITH notes from background = keep notes (notes are close to 0 and thus not subtracted)
     
@@ -21,5 +21,17 @@ function [notes, background, hullMask, notesBW] = extractnotesfromphoto(image)
     lowerThresh = graythresh(notes);
     upperThresh = 1.0-lowerThresh*0.07;                   % value chosen based on manual testing
     notes = imadjust(notes, [lowerThresh, upperThresh]);  % increase contrast and push weak noise to the limits
+    
+    % Determine region of notes
+    bbox = [1, 1, size(image,2), size(image,1)];
+    props = regionprops(hullMask, 'BoundingBox');
+    if size(props,1) > 0
+        bbox = props(1).BoundingBox;
+    end
+    startX = max(1,bbox(1));
+    endX = min(size(image,2), bbox(1)+bbox(3));
+    startY = max(1, bbox(2));
+    endY = min(size(image,1), bbox(2)+bbox(4));
+    notesRegion = round([startX, startY, endX, endY]);
 end
 

@@ -1,29 +1,22 @@
-function [staffsSegments] = extractStaffsSegments(image)  
-    % Aggressively increase contrast in image (push midtones to extremes)
-    lines = histeq(image);
-    lines = imadjust(lines, [graythresh(lines) 1.0]);
-    lines = imadjust(lines, [0.0 graythresh(lines)]);
+function [individualStaffs, staffCount] = splitStaffsBasedOnMask(image, staffsMask)  
+    % Default return values
+    individualStaffs = [];
+    staffCount = 0;
     
-    % Separate the lines
-    segmentLength = size(lines,2)/4;
-    lines = imerode(lines, strel('disk', 2, 4));
-    lines = imdilate(lines, strel('line', segmentLength, 0));
-    lines = imerode(lines, strel('line', segmentLength, 0));
-    
-    % Melt lines together to create a "block" for each group of staff lines
-    lines = imerode(lines, strel('disk', 16, 4));
-    lines = imdilate(lines, strel('disk', 16, 4));
-    
-    % Use region props to detect the bounding box of the staff "blocks"
-    staffsMask = lines < graythresh(lines);
-    props = regionprops(staffsMask, 'BoundingBox');
-    staffCount = size(props, 1);
-    
-    if staffCount == 0
-        % No staffs found, exit early
-        staffsSegments = [];
+    % Detect that input dimensions agree
+    imageWidth = size(image, 2);
+    imageHeight = size(image, 1);
+    maskWidth = size(staffsMask, 2);
+    maskHeight = size(staffsMask, 1);
+    if imageWidth == 0 || imageHeight == 0 || maskWidth == 0 || maskHeight == 0 || ...
+       imageWidth ~= maskWidth || imageHeight ~= maskHeight
         return;
     end
+    
+    % Extract properties (exit early if no properties found)
+    props = regionprops(staffsMask, 'BoundingBox');
+    staffCount = size(props, 1);
+    if staffCount == 0; return; end
     
     % Sort props based on bounding box vertical order
     bboxes = cat(1, props.BoundingBox);
@@ -40,7 +33,17 @@ function [staffsSegments] = extractStaffsSegments(image)
         x1 = floor(bbox(1));
         y1 = floor(bbox(2));
         x2 = x1 + floor(bbox(3));
-        y2 = y1 + floor(bbox(4));  
+        y2 = y1 + floor(bbox(4));
+        
+        cx = round((x1+x2)/2);
+        cy = round((y1+y2)/2);
+        limitX = imageWidth*0.02;
+        limitY = imageHeight*0.02;
+        if cx < limitX || cx > (imageWidth-limitX) || ...
+           cy < limitY || cy > (imageHeight-limitY)
+           %disp("Removed bad staff, the midpoint was too close to the image border");
+           continue;
+        end
         
         box = struct;
         box.x1 = floor(bbox(1));
@@ -50,6 +53,7 @@ function [staffsSegments] = extractStaffsSegments(image)
         
         bboxes = [bboxes; box];
     end
+    staffCount = size(bboxes,1);
     
     %%%% Generate staff regions based on the bounding boxes %%%%
     % Staff regions are equally divided regions in the image that encloses
@@ -74,7 +78,7 @@ function [staffsSegments] = extractStaffsSegments(image)
     outerRegionWidth = outerRegionRight-outerRegionLeft;
     
     % Extract staff segments
-    staffsSegments = [];
+    individualStaffs = [];
     for i=1:staffCount
         % Determine region using width of bounding box and height of vertical cuts
         xBegin = bboxes(i).x1;
@@ -83,27 +87,20 @@ function [staffsSegments] = extractStaffsSegments(image)
         yEnd   = verticalCuts(i+1);
 
         % Crop based on the new region
-        segment = struct;
-        segment.image = image(yBegin:yEnd, xBegin:xEnd);
-        segment.mask  = staffsMask(yBegin:yEnd, xBegin:xEnd); 
+        staff = struct;
+        staff.image = image(yBegin:yEnd, xBegin:xEnd);
+        staff.mask  = staffsMask(yBegin:yEnd, xBegin:xEnd); 
         
         % Resize width of each staff to match the outer region
-        segment.image = imresize(segment.image, [size(segment.image, 1) outerRegionWidth], 'bicubic');
-        segment.mask  = imresize(segment.mask,  [size(segment.image, 1) outerRegionWidth], 'nearest');
+        staff.image = imresize(staff.image, [size(staff.image, 1) outerRegionWidth], 'bicubic');
+        staff.mask  = imresize(staff.mask,  [size(staff.image, 1) outerRegionWidth], 'nearest');
         
         % New bounding box width is the width of the image segment.
         % New height is the same but has the vertical cut as origin.
-        segment.staffBeginY = bboxes(i).y1-yBegin;
-        segment.staffEndY = bboxes(i).y2-yBegin;
+        staff.staffBeginY = bboxes(i).y1-yBegin;
+        staff.staffEndY = bboxes(i).y2-yBegin;
         
-        % DRAW DEBUG
-        if false
-            segment.image = 1-(1-segment.image)*0.2;
-            segment.image(segment.staffBeginY, :) = 0;
-            segment.image(segment.staffEndY, :) = 0;
-        end
-        
-        staffsSegments = [staffsSegments; segment];
+        individualStaffs = [individualStaffs; staff];
     end
 end
 

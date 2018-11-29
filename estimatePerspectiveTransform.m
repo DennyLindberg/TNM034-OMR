@@ -1,19 +1,19 @@
-function [result] = perspectiveCorrection(image)
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Start by generating a mask (bound) for each staff with
-    % properties sorted from top to bottom.
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Make islands of staffs
-    staffsMask = extractLinesByAngle(image, 10, 1);
-    staffsMask = imopen(staffsMask, strel('disk', 16, 4));
-    staffsMask = (staffsMask < graythresh(staffsMask));
+function [tform] = estimatePerspectiveTransform(staffsMask)
+    % Default return value is the identity transform.
+    % Rotate around the origin.
+    tform = projective2d;
+    
+    maskHeight = size(staffsMask, 1);
+    maskWidth = size(staffsMask, 2);
+    if maskHeight == 0 || maskWidth == 0
+        return;
+    end
     
     % Use mask to identify each staff and orientation
     props = regionprops(staffsMask, 'Centroid', 'Orientation', 'MajorAxisLength');
     staffCount = size(props, 1);
     if staffCount == 0
-       result = image;
-       return; 
+        return;
     end
     
     % Sort props based on centroid y-values
@@ -25,15 +25,13 @@ function [result] = perspectiveCorrection(image)
     
     
     
-    
-    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Based on the mask properties, generate start/end points 
     % for perspective correction.
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     staffs = [];
     edgesOfMask = edge(staffsMask, 'sobel');
-    [gridX, gridY] = meshgrid(1:size(image,2), 1:size(image,1));
+    [gridX, gridY] = meshgrid(1:maskWidth, 1:maskHeight);
     for j=1:staffCount   
         % Vertical staffs are not supported
         if props(j).Orientation == 90
@@ -47,11 +45,10 @@ function [result] = perspectiveCorrection(image)
         centroid = props(j).Centroid;
         cx = centroid(1,1);
         cy = centroid(1,2);
-        widthLimit = floor(size(image,2)*0.05);
-        heightLimit = floor(size(image,1)*0.05);
-        if cx < widthLimit || cx > (size(image,2)-widthLimit) || ...
-           cy < heightLimit || cy > (size(image,1)-heightLimit)
-           %disp("Found false positive");
+        widthLimit = floor(maskWidth*0.02);
+        heightLimit = floor(maskHeight*0.02);
+        if cx < widthLimit  || cx > (maskWidth-widthLimit) || ...
+           cy < heightLimit || cy > (maskHeight-heightLimit)
            continue;
         end
         
@@ -110,14 +107,11 @@ function [result] = perspectiveCorrection(image)
         staffs = [staffs; newStaff];
     end
     staffCount = size(staffs,1);
-    
-    
-    
-    
+
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Determine if the image has a perspective. First determine if staffs
+    % Determine if the image has a perspective. First detect if staffs
     % are parallel. If they are nearly parallel we also have to check if
     % the corner angles are nearly perpendicular.
     %
@@ -155,20 +149,28 @@ function [result] = perspectiveCorrection(image)
         hasPerspective = abs(angle-90) > 1;
     end
     
-    % DEBUG
-    %if hasPerspective
-    %    disp("Perspective detected");
-    %else
-    %    disp("Orthogonal");
-    %end
-    
     if ~hasPerspective
         % All staffs are parallel and the corners are perpendicular.
         % It is VERY likely to be a scanned paper with no perspective.
-        result = 1-imrotate(1-image, -staffs(1).angle, 'bicubic');
+        
+        % Determine if the angle is great enough to need a rotation.
+        % (more than 0.2 degrees)
+        averageAngle = sum([staffs.angle])/staffCount;
+        if abs(averageAngle) > 0.2
+            T = [1 -sind(averageAngle) 0; 
+                 sind(averageAngle) 1 0; 
+                 0 0 1];
+            tform = affine2d(T);
+            
+            %disp("Image only needed rotation");
+        else
+            %disp("Image is straight (no transform necessary)");
+        end
+        
+        % Function is done
         return;
     end
-    
+    %disp("Image has perspective");
     
     
     
@@ -181,11 +183,9 @@ function [result] = perspectiveCorrection(image)
     %
     % Also remember longest dimensions so that we size up, not down.
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    farLeft = size(image, 2); farRight = 0;
-    leftTop = size(image, 1); leftBottom = 0;
-    rightTop = size(image, 1); rightBottom = 0;
-    longestStaff = 0;
-    longestColumn = 0;
+    farLeft = maskWidth;   farRight = 0;
+    leftTop = maskHeight;  leftBottom = 0;
+    rightTop = maskHeight; rightBottom = 0;
     for j=1:staffCount
         farLeft = min(farLeft, staffs(j).x1);
         leftTop = min(leftTop, staffs(j).y1);
@@ -194,54 +194,37 @@ function [result] = perspectiveCorrection(image)
         farRight = max(farRight, staffs(j).x2);
         rightTop = min(rightTop, staffs(j).y2);
         rightBottom = max(rightBottom, staffs(j).y2);
-        
-        longestStaff = max(longestStaff, staffs(j).length);
     end
     leftHeight = leftBottom-leftTop;
-    rightHeight = rightBottom-rightTop;    
+    rightHeight = rightBottom-rightTop;
     maxHeight = max(leftHeight, rightHeight);    
+    heightScale = maxHeight / leftHeight;
     
-    
-    
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Skip the last staff as it can vary in length.
-    % TODO: A single staff might still be skewed after running this
-    %       function.
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if staffCount > 1
-        staffCount = staffCount-1;
-        staffs = staffs(1:staffCount);
-    end
-    
-    % Create a second set of staffs. These staffs are "straightened out"
-    % and will be used as a target for warping the image.
+    % Create a second set of staffs. These staffs are the transform
+    % target and will be used for the perspective correction.
     adjustedStaffs = staffs;
-    
-    % Snap all points to the sides
     for j=1:staffCount
+       % Snap sides to extremes
        adjustedStaffs(j).x1 = farLeft;
        adjustedStaffs(j).x2 = farRight;
-    end
-    
-    % Move left points upwards to origo -> scale.
-    % Right points height are simply flattened to match the left.
-    scale = maxHeight / leftHeight;
-    for j=1:staffCount
-       adjustedStaffs(j).y1 = (adjustedStaffs(j).y1-leftTop)*scale;
+       
+       % Height must be scaled and offset. Right height is flattened to
+       % the same as the left.
+       adjustedStaffs(j).y1 = (adjustedStaffs(j).y1-leftTop)*heightScale;
        adjustedStaffs(j).y2 = adjustedStaffs(j).y1;
     end
-    
-    % Convert staffs to points that can be used by fitgeotrans
-    points=[];
-    targetPoints=[];
-    for j=1:staffCount
-        points = [points; staffs(j).x1, staffs(j).y1; staffs(j).x2, staffs(j).y2];
-        targetPoints = [targetPoints; adjustedStaffs(j).x1, adjustedStaffs(j).y1; adjustedStaffs(j).x2, adjustedStaffs(j).y2];
+        
+    % Convert staffs to points that can be used by fitgeotrans.
+    % (exclude the last staff as it can skew the results)
+    perspectivePoints=[];
+    orthogonalPoints=[];
+    secondLast = max(1, staffCount-1);
+    for j=1:secondLast
+        perspectivePoints = [perspectivePoints; staffs(j).x1, staffs(j).y1; staffs(j).x2, staffs(j).y2];
+        orthogonalPoints = [orthogonalPoints; adjustedStaffs(j).x1, adjustedStaffs(j).y1; adjustedStaffs(j).x2, adjustedStaffs(j).y2];
     end
     
-    % Apply the final transformation
-    tform = fitgeotrans(points, targetPoints, 'projective');
-    result = 1-imwarp(1-image, tform, 'cubic');
+    % Return the estimated perspective transform
+    tform = fitgeotrans(orthogonalPoints, perspectivePoints, 'projective');
 end
 
