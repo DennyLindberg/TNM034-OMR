@@ -68,8 +68,8 @@ staffsMask = (staffsMask > graythresh(staffsMask));
 % staff (struct)
 %   .image      bitmap containing notes
 %   .mask       logical mask which wraps around the five major staff lines
-%   .beginY     top of first staff line
-%   .endY       bottom of fifth staff line
+%   .top        top of first staff line
+%   .bottom     bottom of fifth staff line
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [staffs, staffCount] = splitStaffsBasedOnMask(image, staffsMask);
 
@@ -77,8 +77,8 @@ staffsMask = (staffsMask > graythresh(staffsMask));
 if drawDebug_alternatingStaffs
     for k=1:staffCount
         staffs(k).image = 1-(1-staffs(k).image)*0.2;
-        staffs(k).image(staffs(k).staffBeginY, :) = 0;
-        staffs(k).image(staffs(k).staffEndY, :) = 0;
+        staffs(k).image(staffs(k).top, :) = 0;
+        staffs(k).image(staffs(k).bottom, :) = 0;
 
         % invert alternating
         if ~mod(k,2)
