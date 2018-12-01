@@ -1,4 +1,4 @@
-function [alpha] = getLinesAlphaByAngle(image, searchAngle, angleStepSize, lineSearchLength, thickenRadius)
+function [alpha] = pp_getLinesBySearchAngle(image, searchAngle, angleStepSize, lineSearchLength, thickenRadius)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Optional parameters default values
     % searchAngle: +- offset from the horizontal line
@@ -35,14 +35,5 @@ function [alpha] = getLinesAlphaByAngle(image, searchAngle, angleStepSize, lineS
     
     % flip alpha so that lines are white
     alpha = 1-alpha;
-
-%     lines = histeq(image);
-%     lines = lines > graythresh(lines);
-%     lines = imdilate(lines, strel('rectangle', [3 2]));
-%     alpha = ones(size(lines));
-%     for angle=-searchAngle:angleStepSize:searchAngle     
-%         alpha = alpha .* imclose(lines, strel('line', lineSearchLength, angle));
-%     end
-%     alpha = 1-alpha;
 end
 

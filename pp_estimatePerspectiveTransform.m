@@ -1,4 +1,4 @@
-function [tform, hasPerspective] = estimatePerspectiveTransform(staffsMask)
+function [tform, hasPerspective] = pp_estimatePerspectiveTransform(staffsMask)
     hasPerspective = false;
     
     % Default return value is the identity transform.

@@ -1,4 +1,4 @@
-function [result] = radonLineFilter(image, blockSize, lineCutoff)
+function [result] = pp_radonLineFilter(image, blockSize, lineCutoff)
     width = size(image, 2);
     height = size(image, 1);
     

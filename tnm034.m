@@ -10,7 +10,7 @@ function strout = tnm034(im)
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 imagePath = 'Images/im13c.jpg';
-drawDebug_straightenStaffs = false;
+drawDebug_straightenStaffs = true;
 staffNormalizedWidth = 2048;
 
 demoFolder = matlabroot + "/toolbox/images/imdata/";
@@ -29,7 +29,7 @@ testImage = im2double(imread(demoFolder + "cameraman.tif"));
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     original = imread(imagePath);
     originalgray = im2double(rgb2gray(original)); 
-    [notes, region] = removeBackground(originalgray);   
+    [notes, region] = pp_removeBackground(originalgray);   
     notes = notes(region(2):region(4), region(1):region(3));
 
     
@@ -48,7 +48,7 @@ testImage = im2double(imread(demoFolder + "cameraman.tif"));
     notes = padarray(notes, [paddingHeight, paddingWidth], 1, 'both');
     
     % Attempt to extract the masks
-    staffLinesAlpha = getLinesAlphaByAngle(notes, lineSearch_angleLimit, lineSearch_angleStep, lineSearch_minimumLength);
+    staffLinesAlpha = pp_getLinesBySearchAngle(notes, lineSearch_angleLimit, lineSearch_angleStep, lineSearch_minimumLength);
     staffsMask = imclose(staffLinesAlpha, strel('disk', 16, 4));
     staffsMask = (staffsMask > graythresh(staffsMask));
 
@@ -57,7 +57,7 @@ testImage = im2double(imread(demoFolder + "cameraman.tif"));
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Use mask of staffs to detect perspective transform
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [perspective, hasPerspective] = estimatePerspectiveTransform(staffsMask);
+    [perspective, hasPerspective] = pp_estimatePerspectiveTransform(staffsMask);
     perspectiveInverse = invert(perspective);
     
     
@@ -105,7 +105,7 @@ testImage = im2double(imread(demoFolder + "cameraman.tif"));
     %   .topSpline      defines top coordinate line (not yet created)
     %   .bottomSpline   defines fifth coordinate line (not yet created)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [staffs, staffCount] = splitStaffsBasedOnMasks(notes, staffsMask, notesMask);
+    [staffs, staffCount] = pp_splitStaffsBasedOnMasks(notes, staffsMask, notesMask);
     
     % Normalize
     for k=1:staffCount
@@ -134,7 +134,7 @@ testImage = im2double(imread(demoFolder + "cameraman.tif"));
         height = size(staffs(k).image,1);
         width = size(staffs(k).image,2);
         blockWidth = round(height);
-        [topPoints, bottomPoints, scatterMask] = getStaffLinesPoints(staffs(k).image, blockWidth);
+        [topPoints, bottomPoints, scatterMask] = pp_detectPointsOnStaffLines(staffs(k).image, blockWidth);
         
         if isempty(topPoints)
             topPoints = [1, staffs(k).top; width, staffs(k).top];

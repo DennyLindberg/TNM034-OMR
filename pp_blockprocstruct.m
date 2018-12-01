@@ -1,4 +1,4 @@
-function [result] = blockprocstruct(image, measurements, fun)
+function [result] = pp_blockprocstruct(image, measurements, fun)
     width = size(image, 2);
     height = size(image, 1);
     

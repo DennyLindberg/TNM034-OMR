@@ -1,4 +1,4 @@
-function scatterLines = scatterLinesForBlock(blockStruct)      
+function scatterLines = pp_blockwiseScatterLines(blockStruct)      
     % Get data from struct
     imageBW = blockStruct.data < graythresh(blockStruct.data);
     segmentLength = size(imageBW, 2)/2;

@@ -1,4 +1,4 @@
-function [pointsFirstLine, pointsFifthLine, debugRegionsMask] = getStaffLinesPoints(staffImage, blockWidth)
+function [pointsFirstLine, pointsFifthLine, debugRegionsMask] = pp_detectPointsOnStaffLines(staffImage, blockWidth)
     % Default values
     pointsFirstLine = [];
     pointsFifthLine = [];
@@ -7,7 +7,7 @@ function [pointsFirstLine, pointsFifthLine, debugRegionsMask] = getStaffLinesPoi
     width = size(staffImage, 2);
 
     % Recreate staffMask, but only with the top and bottom lines.
-    mask = getLinesAlphaByAngle(staffImage, 1, 0.2, round(size(staffImage,2)*0.25));
+    mask = pp_getLinesBySearchAngle(staffImage, 1, 0.2, round(size(staffImage,2)*0.25));
     
     % Remove mask residue close to the image borders which can mess up
     % the next step
@@ -24,7 +24,7 @@ function [pointsFirstLine, pointsFifthLine, debugRegionsMask] = getStaffLinesPoi
 
     
     % Use the two lines to find key points
-    scatterLines = blockprocstruct(staffImage, [height, blockWidth], @scatterLinesForBlock);
+    scatterLines = pp_blockprocstruct(staffImage, [height, blockWidth], @pp_blockwiseScatterLines);
 
     scatterPoints = [];
     for k=1:size(scatterLines,1)

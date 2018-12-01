@@ -1,5 +1,5 @@
 % Attempts to isolate notes from the background
-function [notes, notesRegion] = removeBackground(image)
+function [notes, notesRegion] = pp_removeBackground(image)
     % Separate background and notes by using morphological operations
     imageSize = size(image);
     diskSize = floor(imageSize(1,2)/100);               

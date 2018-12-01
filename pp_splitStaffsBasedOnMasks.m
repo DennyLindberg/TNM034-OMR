@@ -1,4 +1,4 @@
-function [individualStaffs, staffCount] = splitStaffsBasedOnMasks(image, staffsMask, notesMask)  
+function [individualStaffs, staffCount] = pp_splitStaffsBasedOnMasks(image, staffsMask, notesMask)  
     % Default return values
     individualStaffs = [];
     staffCount = 0;

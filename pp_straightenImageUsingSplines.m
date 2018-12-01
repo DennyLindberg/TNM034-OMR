@@ -1,4 +1,4 @@
-function [result] = straightenImageUsingSplines(image, topSpline, bottomSpline, samplerScale)
+function [result] = pp_straightenImageUsingSplines(image, topSpline, bottomSpline, samplerScale)
     result = image;
     height = size(image, 1);
     width = size(image, 2);
