@@ -9,14 +9,21 @@ function strout = tnm034(im)
 % Your program code.
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-imagePath = 'Images/im10c.jpg';
-drawDebug_alternatingStaffs = true;
+imagePath = 'Images/im13c.jpg';
+drawDebug_straightenStaffs = false;
 staffNormalizedWidth = 2048;
 
-%% Pre-processing (Grade 4/5)
+demoFolder = matlabroot + "/toolbox/images/imdata/";
+demoImages = dir(fullfile(demoFolder + "*.*"));
+demoImages = string({demoImages.name});
+testImage = im2double(imread(demoFolder + "cameraman.tif"));
 
 
-%% Geometric transform (Denny)
+
+% Pre-processing (Grade 4/5)
+
+
+% Geometric transform (Denny)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Load image and remove background
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,7 +57,7 @@ staffNormalizedWidth = 2048;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Use mask of staffs to detect perspective transform
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    perspective = estimatePerspectiveTransform(staffsMask);
+    [perspective, hasPerspective] = estimatePerspectiveTransform(staffsMask);
     perspectiveInverse = invert(perspective);
     
     
@@ -90,45 +97,114 @@ staffNormalizedWidth = 2048;
     % based on the masks.
     %
     % staff (struct)
-    %   .image      bitmap containing notes
-    %   .staffMask  logical mask which wraps around the five major staff lines
-    %   .notesMask  logical mask which also includes the notes hanging outside the staff
-    %   .top        top of first staff line
-    %   .bottom     bottom of fifth staff line
+    %   .image          bitmap containing notes
+    %   .staffMask      logical mask which wraps around the five major staff lines
+    %   .notesMask      logical mask which also includes the notes hanging outside the staff
+    %   .top            top of first staff line
+    %   .bottom         bottom of fifth staff line
+    %   .topSpline      defines top coordinate line (not yet created)
+    %   .bottomSpline   defines fifth coordinate line (not yet created)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [staffs, staffCount] = splitStaffsBasedOnMasks(notes, staffsMask, notesMask);
     
     % Normalize
     for k=1:staffCount
-        scaleFactor = staffNormalizedWidth / size(staffs(k).image, 2);
+        globalScale = staffNormalizedWidth / size(staffs(k).image, 2);
         
-        staffs(k).image     = imresize(staffs(k).image, scaleFactor, 'bicubic');
-        staffs(k).staffMask = imresize(staffs(k).staffMask, scaleFactor, 'nearest');
-        staffs(k).notesMask = imresize(staffs(k).notesMask, scaleFactor, 'nearest');
+        staffs(k).image     = imresize(staffs(k).image, globalScale, 'bicubic');
+        staffs(k).staffMask = imresize(staffs(k).staffMask, globalScale, 'nearest');
+        staffs(k).notesMask = imresize(staffs(k).notesMask, globalScale, 'nearest');
         
-        staffs(k).top = round(staffs(k).top*scaleFactor);
-        staffs(k).bottom = round(staffs(k).bottom*scaleFactor);
+        staffs(k).top = round(staffs(k).top*globalScale);
+        staffs(k).bottom = round(staffs(k).bottom*globalScale);
+    end    
+    
+    
+    
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Create splines for first and fifth staff line which will 
+    % be used as a base for a bent coordinate system.
+    % Creates:
+    %   staff.topSpline
+    %   staff.bottomSpline
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    for k=1:staffCount        
+        height = size(staffs(k).image,1);
+        width = size(staffs(k).image,2);
+        blockWidth = round(height);
+        [topPoints, bottomPoints, scatterMask] = getStaffLinesPoints(staffs(k).image, blockWidth);
+        
+        if isempty(topPoints)
+            topPoints = [1, staffs(k).top; width, staffs(k).top];
+        end
+        
+        if isempty(bottomPoints)
+            bottomPoints = [1, staffs(k).bottom; width, staffs(k).bottom];
+        end
+        
+        staffs(k).topSpline = spline(topPoints(:,1), topPoints(:,2));
+        staffs(k).bottomSpline = spline(bottomPoints(:,1), bottomPoints(:,2));
+        
+        % Do not straighten image, it is better to query the splines
+        %staffs(k).image = straightenImageUsingSplines(staffs(k).image, topSpline);
+        
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Draw debug
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if drawDebug_straightenStaffs  
+            splineThickness = 1;
+            for x=1:width    
+                top = round(ppval(x, staffs(k).topSpline));
+                bottom = round(ppval(x, staffs(k).bottomSpline));
+                
+                % Don't allow coordinates outside the image
+                topRange = max(1, (top-splineThickness):(top+splineThickness));
+                topRange = min(height, topRange);
+                bottomRange = max(1, (bottom-splineThickness):(bottom+splineThickness));
+                bottomRange = min(height, bottomRange);
+    
+                scatterMask(topRange, x) = 1;
+                scatterMask(bottomRange, x) = 1;
+                
+                [staffOrigin, staffFifthLine] = getStaffSplineCoordinates(staffs(k), x);
+                sinHeight = round((staffFifthLine - staffOrigin)/2);
+                sinWidth = size(staffs(k).image,2);
+                sinOffset = round(sinHeight*sind(20*360*x/sinWidth) + sinHeight);
+                scatterMask(staffOrigin+sinOffset, x) = 1;
+                
+                stepSize = (staffFifthLine-staffOrigin)/4;
+                for step=-2:6
+                    yCoord = round(staffOrigin + step*stepSize);
+                    if yCoord > 0 && yCoord <= size(staffs(k).image, 1)
+                        scatterMask(yCoord, x) = 1;
+                    end
+                end
+            end
+            
+            imshowpair(scatterMask, staffs(k).image);
+            hold on;
+            scatter(topPoints(:,1), topPoints(:,2), 'o');
+            scatter(bottomPoints(:,1), bottomPoints(:,2), 'o');
+            
+            % Plot debug text on staff
+            for x=1:round(width/8):width
+                [staffOrigin, staffFifthLine] = getStaffSplineCoordinates(staffs(k), x);
+                stepSize = (staffFifthLine-staffOrigin)/4;
+                for step=-2:6
+                    text(x, round(staffOrigin + step*stepSize), string(step), 'Color', 'white', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+                end
+            end
+            
+            hold off;
+            shg;
+            w = waitforbuttonpress;
+        end
     end
     
-    % DRAW A DEBUG LINE ON TOP/BOTTOM OF EACH STAFF
-    if drawDebug_alternatingStaffs
-        for k=1:staffCount
-            staffs(k).image = 1-(1-staffs(k).image)*0.1;
-            
-            line1 = [max(1, (staffs(k).top-3)):min(size(staffs(k).image,1), (staffs(k).top+3))];
-            line2 = [max(1, (staffs(k).bottom-3)):min(size(staffs(k).image,1), (staffs(k).bottom+3))];
-            staffs(k).image(line1, :) = 0;
-            staffs(k).image(line2, :) = 0;
-            
-            % invert alternating
-            if ~mod(k,2)
-                staffs(k).image = 1-staffs(k).image;
-            end
-        end
-        figure;
-        imshowpair(originalgray, vertcat(staffs.image), 'montage');
-    end
-
+    %imshow(vertcat(staffs.image)); 
 
 
 %% Segmentation (Thobbe)

@@ -98,6 +98,10 @@ function [individualStaffs, staffCount] = splitStaffsBasedOnMasks(image, staffsM
         staff.top = max(1, limits(i).staffY1-yBegin);
         staff.bottom = max(1, limits(i).staffY2-yBegin);
         
+        % To be generated
+        staff.topSpline = [];
+        staff.bottomSpline = [];
+        
         individualStaffs = [individualStaffs; staff];
     end
 end

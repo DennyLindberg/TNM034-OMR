@@ -1,4 +1,6 @@
-function [tform] = estimatePerspectiveTransform(staffsMask)
+function [tform, hasPerspective] = estimatePerspectiveTransform(staffsMask)
+    hasPerspective = false;
+    
     % Default return value is the identity transform.
     % Rotate around the origin.
     tform = projective2d;
@@ -226,5 +228,6 @@ function [tform] = estimatePerspectiveTransform(staffsMask)
     
     % Return the estimated perspective transform
     tform = fitgeotrans(orthogonalPoints, perspectivePoints, 'projective');
+    hasPerspective = true;
 end
 
