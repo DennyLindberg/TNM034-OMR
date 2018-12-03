@@ -1,6 +1,8 @@
 function [noStaffImage] = removeStaff(image)
 
-verticals = imclose(image, strel('Line',4,90));
+
+verticals = image < graythresh(image);
+verticals = imclose(verticals, strel('Line',4,90));
 
 disc =imclose(image, strel('disk',2,4));
 
