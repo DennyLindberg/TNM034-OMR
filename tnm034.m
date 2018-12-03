@@ -9,9 +9,9 @@ function strout = tnm034(im)
 % Your program code.
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-imagePath = 'Images/im10s.jpg';
+imagePath = 'Images/im5s.jpg';
 drawDebug_straightenStaffs = false;
-staffNormalizedWidth = 2048;
+staffNormalizedWidth = 1024;
 
 
 % Pre-processing (Grade 4/5)
@@ -201,45 +201,65 @@ staffNormalizedWidth = 2048;
     %imshow(vertcat(staffs.image)); 
 
 
-%% Segmentation (Thobbe)
+% Segmentation (Thobbe)
 % Staff 
     % identification
     % Horizontal projection
 
     % Staff removal
-    sheet = removeStaff(original);
     
+tempImage = 'Templates\templateHigh3.png';
+template = createTemplate(tempImage, staffNormalizedWidth/1024);
+
+    
+for k=1:staffCount
+    staffImage = staffs(k).image;
+    sheet = removeStaff(staffImage);
+    [staffPosition, staffDistance] = getStaffSplineCoordinates(staffs(k),10);
+    noteheads = extractNoteheads(staffImage,template);
+    %imshow(noteheads);
+    centroids = placeCentroids(noteheads,staffImage);
+    imshow(staffImage)
+    hold on
+    plot(centroids(:,1), centroids(:,2), 'r*')
+    hold off
+    shg;
+    w = waitforbuttonpress;
+    %pitches = findPitch(centroids, staffs(k));
+    
+    %xcentroids = centroids(2,:);
+    %[sorted,sortIndex] = sort(xcentroids);
+    %centroids = centroids(sortIndex,:);
+    
+    
+    %staffMask = staffs(k).mask;
+    %firstLineTopY = staffs(k).top;
+    %fifthLineBottomY = staffs(k).bottom;
+end
     % Save staff position
-    [staffPosition, staffDistance] = StaffInformation(original);
-    staffSize = (staffDistance - 10)/10;
+    
 
 %% Binary
     % Thresholding
     % level = graythrash(i);
 
 % Cleaning up (remove false objects)
-
+ staffSize = (staffDistance - 10)/10;
 % Correlation and template matching
-tempImage = 'Templates\templateHigh3.png';
-template = createTemplate(tempImage, 1.0+staffSize);
-noteheads = extractNoteheads(original,template);
+
 
 
 %C = normxcorr2(template, 1-notesRotated);
     
 % labeling (Elias)
 
-placeCentroids(noteheads,original);
 
-ycentroids = centroids(:,2);
-[sorted,sortIndex] = sort(ycentroids);
-centroids = centroids(sortIndex,:);
 
-pitches = findPitch(centroids);
 
-fourths = [G1 A1 B1 C2 D2 E2 F2 G2 A2 B2 C3 D3 E3 F3 G3 A3 B3 C4 D4 E4];
 
-eights = [g1 a1 b1 c2 d2 e2 f2 g2 a2 b2 c3 d3 e3 f3 g3 a3 b3 c4 d4 e4];
+
+
+
 %%
  L = bwlabel(noteheads,4);
  Lmax = max(max(L));
@@ -259,7 +279,7 @@ finalimage = findNotes('Images\im1s.jpg','Templates\templateLow.png');
 %% Symbolic description
 
 %TODO:
-% Automatic scaling for template 
+% Automatic scaling for template
 % Save staff position
 
 
