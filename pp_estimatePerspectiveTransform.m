@@ -99,9 +99,9 @@ function [tform, hasPerspective] = pp_estimatePerspectiveTransform(staffsMask)
         newStaff.x2 = endX;
         newStaff.y2 = endY;
         newStaff.angle = props(j).Orientation;
-        newStaff.centroid = struct("x", centroid(1,1), "y", centroid(1,2));
+        newStaff.centroid = struct('x', centroid(1,1), 'y', centroid(1,2));
         
-        newStaff.direction = struct("x", endX-startX,  "y", endY-startY);
+        newStaff.direction = struct('x', endX-startX,  'y', endY-startY);
         newStaff.length = sqrt(newStaff.direction.x^2 + newStaff.direction.y^2);
         newStaff.direction.x = newStaff.direction.x/newStaff.length;
         newStaff.direction.y = newStaff.direction.y/newStaff.length;

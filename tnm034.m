@@ -9,15 +9,9 @@ function strout = tnm034(im)
 % Your program code.
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-imagePath = 'Images/im13c.jpg';
+imagePath = 'Images/im10s.jpg';
 drawDebug_straightenStaffs = true;
 staffNormalizedWidth = 2048;
-
-demoFolder = matlabroot + "/toolbox/images/imdata/";
-demoImages = dir(fullfile(demoFolder + "*.*"));
-demoImages = string({demoImages.name});
-testImage = im2double(imread(demoFolder + "cameraman.tif"));
-
 
 
 % Pre-processing (Grade 4/5)
