@@ -259,7 +259,7 @@ finalimage = findNotes('Images\im1s.jpg','Templates\templateLow.png');
 %% Symbolic description
 
 %TODO:
-% Automatic scaling for template
+% Automatic scaling for template 
 % Save staff position
 
 
