@@ -10,7 +10,7 @@ function strout = tnm034(im)
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 imagePath = 'Images/im10s.jpg';
-drawDebug_straightenStaffs = true;
+drawDebug_straightenStaffs = false;
 staffNormalizedWidth = 2048;
 
 
@@ -188,7 +188,7 @@ staffNormalizedWidth = 2048;
                 [staffOrigin, staffFifthLine] = getStaffSplineCoordinates(staffs(k), x);
                 stepSize = (staffFifthLine-staffOrigin)/4;
                 for step=-2:6
-                    text(x, round(staffOrigin + step*stepSize), string(step), 'Color', 'white', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+                    text(x, round(staffOrigin + step*stepSize), string(step), 'Color', 'white');
                 end
             end
             
