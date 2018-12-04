@@ -1,4 +1,4 @@
-function strout = tnm034(im)
+function [strout, staffs] = tnm034(im)
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 % Im: Inputimage of captured sheet music. Im should be in
 % double format, normalized to the interval [0,1]
@@ -9,9 +9,9 @@ function strout = tnm034(im)
 % Your program code.
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-imagePath = 'Images/im9s.jpg';
+%imagePath = 'Images/im9s.jpg';
 drawDebug_straightenStaffs = false;
-staffNormalizedWidth = 1024;
+staffNormalizedWidth = 2048;
 
 
 % Pre-processing (Grade 4/5)
@@ -21,9 +21,10 @@ staffNormalizedWidth = 1024;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Load image and remove background
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    original = imread(imagePath);
-    originalgray = im2double(rgb2gray(original)); 
-    [notes, region] = pp_removeBackground(originalgray);   
+    %original = imread(imagePath);
+    %originalgray = im2double(rgb2gray(original)); 
+    %[notes, region] = pp_removeBackground(originalgray);   
+    [notes, region] = pp_removeBackground(im2double(rgb2gray(im)));
     notes = notes(region(2):region(4), region(1):region(3));
 
     
@@ -44,7 +45,6 @@ staffNormalizedWidth = 1024;
     % Attempt to extract the masks
     staffLinesAlpha = pp_getLinesBySearchAngle(notes, lineSearch_angleLimit, lineSearch_angleStep, lineSearch_minimumLength);
     staffsMask = imclose(staffLinesAlpha, strel('disk', 16, 4));
-    staffsMask = (staffsMask > graythresh(staffsMask));
 
     
     
@@ -70,7 +70,6 @@ staffNormalizedWidth = 1024;
     % outside the staff.
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     staffsMask = imclose(staffLinesAlpha, strel('disk', 16, 4));
-    staffsMask = (staffsMask > graythresh(staffsMask));
     
     notesMask = (notes < graythresh(notes));
     notesMask = or(notesMask, staffsMask);
@@ -203,112 +202,27 @@ staffNormalizedWidth = 1024;
 
     
 %%
-staff = staffs(1);
-image = staff.image;
-height = size(image, 1);
-image(:, 1:round(height/2)) = 1;
-
-% Make BW and extract notes without staff lines
-imageBW = image < graythresh(image);
-noStaffs = imopen(imageBW, strel('rectangle', [4 1]));
-
-% Use regionprops and bwlabels to identify "potential" notes
-[labels, labelCount] = bwlabel(noStaffs);
-
-potentialNoteGroup = [];
-notes = [];
-for k=1:labelCount
-    potentialNoteGroup = labels;
-    potentialNoteGroup(labels ~= k) = 0;
-    
-    
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Extract only note heads
-    % Get beams, so that we "backwards" can remove them
-    beams = imerode(potentialNoteGroup, strel('line', 12, 0));
-    beams = imopen(beams, strel('disk', 1, 4));
-    beams = ~imdilate(beams, strel('disk', 6, 4));
-
-    % Remove the beams
-    noteHeads = beams & potentialNoteGroup;
-    
-    % Remove everything that is not a note head
-    noteHeads = imopen(noteHeads, strel('disk', 4, 4));
-    
-
-
-    %Now we can get the position of each note head
-    noteProps = regionprops(noteHeads, 'Centroid');
-    noteCount = size(noteProps, 1);
-    if noteCount == 0
-        continue;
-    end
-
-    for k=1:size(noteProps, 1)
-        c = noteProps(k).Centroid;
-        
-        newNote = struct;
-        newNote.y = c(1,2);
-        newNote.x = c(1,1);
-        
-        [firstLine, fifthLine] = getStaffSplineCoordinates(staff, newNote.x);
-        localStaffHeight = fifthLine-firstLine;
-        pitchStep = localStaffHeight/8;
-        hysteresis = pitchStep/2;
-        newNote.offset = newNote.y+hysteresis-firstLine;
-        pitch = floor((newNote.y-firstLine+hysteresis) / pitchStep); 
-       
-        % F3 is the top line
-        fourths = ["G1", "A1", "B1", "C2", "D2", "E2", "F2", "G2", "A2", "B2", "C3", "D3", "E3", "F3", "G3", "A3", "B3", "C4", "D4", "E4"];
-        indexOffset = 14;
-        maxIndex = size(fourths, 2);
-        pitch = min(maxIndex, max(1, -pitch+indexOffset));
-        newNote.pitch = fourths(pitch);
-        newNote.durationFraction = 4; 
-        isEight = false;
-        if isEight
-            newNote.pitch = lower(newNote.pitch);
-            newNote.durationFraction = 8; 
-        end        
-        
-        notes = [notes; newNote];
-    end
-        
-    imshow(noteHeads);
-    hold on;
-    for k=1:size(notes, 1)
-        n = notes(k);
-        %plot(n.x, n.y, '*', 'Color', 'red');
-        t = text(n.x, n.y, n.pitch);% 'HorizontalAdjustment', 'center', 'VerticalAdjustment', 'middle');
-        t.Color = 'red';
-        %t.FontSize = 24;
-    end
-    hold off;
-    
-
-    shg;
-    w = waitforbuttonpress;
-    continue;
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    
-    
-    
-    
-    
-
+for i=1:staffCount
+    staffs(i).notes = parseNotes(staffs(i));
 end
-
-imshow(noStaffs);
-
-
-
     
     
+strout = "";
+for i=1:staffCount
+    notes = staffs(i).notes;
+    noteCount = size(notes, 1);
     
+    for j=1:noteCount
+        n = notes(j);
+        strout = strout + n.pitch;
+    end
     
+    if i < staffCount
+        strout = strout + "n";
+    end
+end
     
+return;
     
     
 %%

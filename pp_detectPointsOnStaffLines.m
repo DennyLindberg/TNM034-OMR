@@ -18,7 +18,7 @@ function [pointsFirstLine, pointsFifthLine, debugRegionsMask] = pp_detectPointsO
     % Merge lines using morphological operations
     mask = imclose(mask, strel('disk', 16, 4));                     
     heightErode = round(height/6);
-    mask = (1-imerode(mask, strel('line', heightErode, 90))).*mask; % remove chunk so that only the top and bottom lines remain
+    mask = ~imerode(mask, strel('line', heightErode, 90)) & mask; % remove chunk so that only the top and bottom lines remain
     staffImage(~mask) = 1;                                          % erase everything in the image except the two lines
     
 

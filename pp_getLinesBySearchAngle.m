@@ -30,10 +30,10 @@ function [alpha] = pp_getLinesBySearchAngle(image, searchAngle, angleStepSize, l
     % Separate the lines by using structuring elements at different angles
     alpha = ones(size(lines));
     for angle=-searchAngle:angleStepSize:searchAngle     
-        alpha = alpha .* imclose(lines, strel('line', lineSearchLength, angle));
+        alpha = alpha & imclose(lines, strel('line', lineSearchLength, angle));
     end
     
     % flip alpha so that lines are white
-    alpha = 1-alpha;
+    alpha = ~alpha;
 end
 
