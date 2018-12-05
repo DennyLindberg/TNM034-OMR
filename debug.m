@@ -1,4 +1,4 @@
-
+%% Run tnm034 for all images
 folder = 'Images/';
 dirOutput = dir(fullfile('Images/im*.jpg'));
 imageFileNames = string({dirOutput.name});
@@ -9,31 +9,16 @@ for i=1:size(imageFileNames, 2)
     disp(imageFileNames(i));
     original = imread(folder + imageFileNames(i));
     [noteStr, staffs] = tnm034(original);
-    disp(noteStr);
+    
+%     imshow(notes);
+%     shg;
+%     waitforbuttonpress;
     
     staffSet = struct;
     staffSet.name = imageFileNames(i);
     staffSet.staffs = staffs;
     staffSet.count = size(staffs, 1);
     allStaffs = [allStaffs; staffSet];
-    
-%     image = vertcat(staffs.image);
-    %debugImage = vertcat(staffs.debugImage);
-    %combinedImages = vertcat(combinedImages, image);
-    
-   
-%     for k=1:size(staffs, 1)
-%         imshow(staffs(k).image);
-%         for j=1:size(staffs(k).notes)
-%             n = staffs(k).notes(j);
-%             t = text(n.x, n.y, n.pitch);
-%             t.Color = 'red';
-%         end
-%         shg;
-%         w = waitforbuttonpress;
-%     end
-        
-
 end
 
 %% Staff by staff testing
@@ -42,32 +27,40 @@ for i=1:size(allStaffs, 1)
     name = allStaffs(i).name;
     staffs = allStaffs(i).staffs;
     staffCount = allStaffs(i).count;
-    
-    disp(name);
+        
+    processedImage = [];
     wholeImage = vertcat(staffs.image);
-    imshow(wholeImage);
+    for j=1:staffCount
+        staffs(j).image = removeStaff(staffs(j).image);
+        [staffs(j).noteRegions, staffs(j).noteRegionsCount] = separateNotesUsingProjections(staffs(j).image);
+         
+        if true
+            % DEBUG: Show individual regions
+            for k=1:staffs(j).noteRegionsCount
+                r = staffs(j).noteRegions(k);
+                x = r.x;
+                y = r.y;
+                staffs(j).image(y.start:y.end, x.start:x.end) = 0;
+               % imshow(staffs(j).image(y.start:y.end, x.start:x.end));
+               % shg;
+               % waitforbuttonpress;
+            end
+        end
+        
+        processedImage = vertcat(processedImage, staffs(j).image);
+    end
+    
+    
+    
+    
+    
+    imshowpair(wholeImage, processedImage);
+    
+    %imshow(processedImage);
     shg;
     waitforbuttonpress;
-%     for j=1:staffCount
-%         staff = staffs(j);
-%         staff.notes = parseNotes(staff);
-%         
-%         imshow(staff.image);
-%         hold on;
-%         for k=1:size(staff.notes, 1)
-%             n = staff.notes(k);
-%             plot(n.x, n.y, '*', 'Color', 'Red');
-%         end
-%         hold off;
-%         shg;
-%         w = waitforbuttonpress;
-%         
-%         %disp(j);
-%         %image = vertcat(staffs.image);
-%         %imshow(image);
-%         %shg;
-%         %w = waitforbuttonpress;
-%     end
+    continue;
+    
     
     strout = "";
     for j=1:staffCount

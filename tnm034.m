@@ -9,7 +9,6 @@ function [strout, staffs] = tnm034(im)
 % Your program code.
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%imagePath = 'Images/im9s.jpg';
 drawDebug_straightenStaffs = false;
 staffNormalizedWidth = 2048;
 
@@ -35,7 +34,7 @@ staffNormalizedWidth = 2048;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     lineSearch_angleLimit = 10;
     lineSearch_angleStep = 1;
-    lineSearch_minimumLength = round(size(notes,2)*0.4);
+    lineSearch_minimumLength = round(size(notes,2)*0.25);
     
     % Expand image, otherwise the structuring element might fail near the corners
     paddingWidth = round(lineSearch_minimumLength*0.2);
@@ -43,24 +42,24 @@ staffNormalizedWidth = 2048;
     notes = padarray(notes, [paddingHeight, paddingWidth], 1, 'both');
     
     % Attempt to extract the masks
-    staffLinesAlpha = pp_getLinesBySearchAngle(notes, lineSearch_angleLimit, lineSearch_angleStep, lineSearch_minimumLength);
-    staffsMask = imclose(staffLinesAlpha, strel('disk', 16, 4));
+    staffsMask = pp_getLinesBySearchAngle(notes, lineSearch_angleLimit, lineSearch_angleStep, lineSearch_minimumLength);
+    staffsMask = imclose(staffsMask, strel('disk', 16, 4));
 
-    
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Use mask of staffs to detect perspective transform
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [perspective, hasPerspective] = pp_estimatePerspectiveTransform(staffsMask);
     perspectiveInverse = invert(perspective);
-    
-    
+      
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Apply perspective correction to image and alpha
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     notes = 1-imwarp(1-notes, perspectiveInverse, 'cubic');
-    staffLinesAlpha = imwarp(staffLinesAlpha, perspectiveInverse, 'cubic');
+    staffsMask = imwarp(staffsMask, perspectiveInverse, 'linear');
+    staffsMask = imclose(staffsMask, strel('disk', 16, 4));         % clean up jaggies
+    
     
     
     
@@ -68,13 +67,10 @@ staffNormalizedWidth = 2048;
     % Recreate staffsmask post-transform. 
     % Also create a new mask which includes notes hanging
     % outside the staff.
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    staffsMask = imclose(staffLinesAlpha, strel('disk', 16, 4));
-    
-    notesMask = (notes < graythresh(notes));
-    notesMask = or(notesMask, staffsMask);
-    notesMask = bwareaopen(notesMask, size(notes,2));
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+    notesMask = histeq(notes) < 0.25;
+    notesMask = notesMask | staffsMask;
+    notesMask = bwareaopen(notesMask, size(notes,2)*5);
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,7 +78,6 @@ staffNormalizedWidth = 2048;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     notes = 1-(1-notes).*notesMask;  
 
-    
     
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,7 +107,8 @@ staffNormalizedWidth = 2048;
         staffs(k).bottom = round(staffs(k).bottom*globalScale);
     end    
     
-    
+        
+
     
     
     
@@ -127,7 +123,7 @@ staffNormalizedWidth = 2048;
         height = size(staffs(k).image,1);
         width = size(staffs(k).image,2);
         blockWidth = round(height);
-        [topPoints, bottomPoints, scatterMask] = pp_detectPointsOnStaffLines(staffs(k).image, blockWidth);
+        [topPoints, bottomPoints, scatterMask] = pp_detectPointsOnStaffLines(staffs(k).image, blockWidth);  
         
         if isempty(topPoints)
             topPoints = [1, staffs(k).top; width, staffs(k).top];
@@ -165,9 +161,9 @@ staffNormalizedWidth = 2048;
                 [staffOrigin, staffFifthLine] = getStaffSplineCoordinates(staffs(k), x);
                 sinHeight = round((staffFifthLine - staffOrigin)/2);
                 sinWidth = size(staffs(k).image,2);
-                sinOffset = round(sinHeight*sind(20*360*x/sinWidth) + sinHeight);
-                scatterMask(staffOrigin+sinOffset, x) = 1;
-                
+%                 sinOffset = round(sinHeight*sind(20*360*x/sinWidth) + sinHeight);
+%                 scatterMask(staffOrigin+sinOffset, x) = 1;
+%                 
                 stepSize = (staffFifthLine-staffOrigin)/4;
                 for step=-2:6
                     yCoord = round(staffOrigin + step*stepSize);
@@ -181,28 +177,20 @@ staffNormalizedWidth = 2048;
             hold on;
             scatter(topPoints(:,1), topPoints(:,2), 'o');
             scatter(bottomPoints(:,1), bottomPoints(:,2), 'o');
-            
-            % Plot debug text on staff
-            for x=1:round(width/8):width
-                [staffOrigin, staffFifthLine] = getStaffSplineCoordinates(staffs(k), x);
-                stepSize = (staffFifthLine-staffOrigin)/4;
-                for step=-2:6
-                    text(x, round(staffOrigin + step*stepSize), string(step), 'Color', 'white');
-                end
-            end
-            
+                        
             hold off;
             shg;
             w = waitforbuttonpress;
         end
     end
     
-    %imshow(vertcat(staffs.image)); 
-    
 
     
-%%
+
+
 for i=1:staffCount
+    staffs(j).image = removeStaff(staffs(j).image);
+    [staffs(j).noteRegions, staffs(j).noteRegionsCount] = separateNotesUsingProjections(staffs(j).image);
     staffs(i).notes = parseNotes(staffs(i));
 end
     
