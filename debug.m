@@ -52,10 +52,11 @@ for i=1:size(allStaffs, 1)
     
     
     for j=1:staffCount
-        imshow(staffs(j).image); hold on;
-        staffs(j).notes = parseNotes(staffs(j));
-        notesCount = size(staffs(j).notes, 1);
         
+        [staffs(j).notes, debugImage] = parseNotes(staffs(j));
+        imshowpair(staffs(j).image, debugImage); hold on;
+        
+        notesCount = size(staffs(j).notes, 1);
         for k=1:notesCount
             n = staffs(j).notes(k);
             plot(n.x, n.y, '*', 'Color', 'Red'); 

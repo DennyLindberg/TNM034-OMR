@@ -1,9 +1,10 @@
-function [notes] = parseNotes(staffStruct)
+function [notes, debugImage] = parseNotes(staffStruct)
     notes = [];
     staffImage = staffStruct.image;
     noteRegions = staffStruct.noteRegions;
     regionsCount = staffStruct.noteRegionsCount;
-        
+    
+    debugImage = zeros(size(staffImage));
     for k=1:regionsCount
         r = noteRegions(k);
         x = r.x;
@@ -15,6 +16,8 @@ function [notes] = parseNotes(staffStruct)
         mask = mask < 0.98;
         mask = imopen(mask, strel('disk', 7, 4));
         
+        debugImage(y.start:y.end, x.start:x.end) = ~mask;
+
         props = regionprops(mask, 'Centroid');
         propscount = size(props, 1);
         for m=1:propscount
