@@ -14,7 +14,6 @@ function [notes, debugImage] = parseNotes(staffStruct)
 %     beamsAndHeads = imdilate(beamsAndHeads, strel('disk', 1, 4)); % connect nearby components
 %     beamsAndHeads = bwareaopen(beamsAndHeads, staffHeight); % remove small objects
     
-    disp(regionsCount);
     debugImage = zeros(size(staffImage));
     for k=1:regionsCount
         noteHeads = [];
@@ -161,7 +160,6 @@ function [notes, debugImage] = parseNotes(staffStruct)
 %         end
         
         headCount = size(noteHeads, 1);
-        disp(headCount);
         for m=1:headCount
             newNote = struct;
             newNote.x = noteHeads(m).x + x.start;
