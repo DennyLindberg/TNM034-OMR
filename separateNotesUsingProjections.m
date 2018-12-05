@@ -1,4 +1,5 @@
 function [noteRegions, noteRegionsCount] = separateNotesUsingProjections(staffImage)
+    staffImage = removeStaff(staffImage);
     height = size(staffImage, 1);
 
     % Abuse imsharpen so that dark and white regions separate.
@@ -19,6 +20,7 @@ function [noteRegions, noteRegionsCount] = separateNotesUsingProjections(staffIm
     % V PROJECTION
     vSum = sum(maskForProjection, 1);
     vSum = vSum > 0;
+    vSum = imclose(vSum, strel('line', 2, 0));  % Some regions have a 1 pixel gap, close it.
     [labels, labelCount] = bwlabel(vSum);
     regions = regionprops(labels, 'BoundingBox');
     for k=1:labelCount

@@ -1,12 +1,23 @@
 function [notes, debugImage] = parseNotes(staffStruct)
     notes = [];
     staffHeight = max(1, (staffStruct.bottom - staffStruct.top));
-    staffImage = staffStruct.image;
+    staffImage = removeStaff(staffStruct.image);
+
     noteRegions = staffStruct.noteRegions;
     regionsCount = staffStruct.noteRegionsCount;
     
+    % Create a second image which greatly simplifies extracting the
+    % note heads and beams.  
+%     beamsAndHeads = 1-staffStruct.image;
+%     beamsAndHeads = ordfilt2(beamsAndHeads,30,true(10)); % flatten noise (bit blurry)
+%     beamsAndHeads = 1-imextendedmin(beamsAndHeads, graythresh(beamsAndHeads));
+%     beamsAndHeads = imdilate(beamsAndHeads, strel('disk', 1, 4)); % connect nearby components
+%     beamsAndHeads = bwareaopen(beamsAndHeads, staffHeight); % remove small objects
+    
+    disp(regionsCount);
     debugImage = zeros(size(staffImage));
     for k=1:regionsCount
+        noteHeads = [];
         r = noteRegions(k);
         x = r.x;
         y = r.y;
@@ -41,20 +52,106 @@ function [notes, debugImage] = parseNotes(staffStruct)
         % Remove very thin vertical lines
         if regionRatio < 0.25; continue; end 
         
-        
-        % Beam detection (may have false positives)
-       % regionRatio = regionWidth / regionHeight;
-        %isPotentialBeam = regionRatio > 0.6;
-        %%debugImage(y.start:y.end, x.start:x.end) = mask & isPotentialBeam;
-        
+
         % Create mask
         mask = imsharpen(imageRegion, 'Radius', 10, 'Amount', 30);
         mask = mask < 0.98;
         
+        % Beam detection (may have false positives)
+        regionRatio = regionWidth / regionHeight;
+        isProbablyASingleNote = regionRatio < 0.6;
+        
+        noteProps = [];
+        notePropsCount = 0;
+        if isProbablyASingleNote            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % Very likely a single note.
+            % There could however be some false
+            % shapes.
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            noteHeadHeight = rowStep;
+
+            % Vertical mask (removes lines and some false positives (vertical beams))
+            vmask = imopen(mask, strel('line', round(regionHeight/2), 90));
+            vmask = imerode(vmask, strel('line', round(noteHeadHeight*0.75), 90));
+            vmask = imdilate(vmask, strel('disk', 1, 4));
+            mask = mask & ~vmask;
+            
+            % Detect if a stem is present
+            % TODO: Find a much better method
+            stemProps = regionprops(vmask, 'MajorAxisLength');
+            propsCount = size(stemProps, 1);
+            if propsCount == 0
+               continue;        % no stem, throw away
+            else
+                hasStem = false;
+                for m=1:propsCount
+                    if stemProps(m).MajorAxisLength > rowStep
+                        hasStem = true;
+                        break;
+                    end
+                end
+                if ~hasStem
+                    continue;
+                end
+            end
+            
+            % Cleanup some residue
+            mask = imopen(mask, strel('disk', 2, 4));
+            
+            % 90% detection of single notes. (some open notes disappear)
+            diskSize = round(rowStep/40 * 16); % Dependent on a good balance here
+            mask = imclose(mask, strel('disk', diskSize, 4));
+            mask = imopen(mask, strel('disk', diskSize, 4));
+            
+        
+            %mask = beamsAndHeads(y.start:y.end, x.start:x.end);
+            debugImage(y.start:y.end, x.start:x.end) = mask;
+
+            noteProps = regionprops(mask, 'Centroid');
+            notePropsCount = size(noteProps, 1);
+            for m=1:notePropsCount
+                c = noteProps(m).Centroid;
+                noteHeads = [noteHeads; struct("x", c(1,1), "y", c(1,2), "duration", 4)];
+            end
+        else
+            % Local pass
+            noteHeadHeight = rowStep;
+            beamsAndHeads = 1-staffStruct.image(y.start:y.end, x.start:x.end);
+            beamsAndHeads = ordfilt2(beamsAndHeads,30,true(10)); % flatten noise (bit blurry)
+            beamsAndHeads = 1-imextendedmin(beamsAndHeads, graythresh(beamsAndHeads));
+            beamsAndHeads = imdilate(beamsAndHeads, strel('disk', 1, 4)); % connect nearby components
+            beamsAndHeads = bwareaopen(beamsAndHeads, round((noteHeadHeight^2)/2)); % remove small objects
+            
+            [labels, labelCount] = bwlabel(beamsAndHeads);
+            noteProps = regionprops(beamsAndHeads, 'BoundingBox', 'Centroid');
+            notePropsCount = size(noteProps, 1);
+            
+            hasBeam = false;
+            filteredProps = [];
+            for m=1:notePropsCount
+                bbox = noteProps(m).BoundingBox;
+                width = round(bbox(3));
+                if width > rowStep*1.75
+                   hasBeam = true; 
+                else
+                   filteredProps = [filteredProps; noteProps(m)];
+                end
+            end
+            notePropsCount = size(filteredProps, 1);
+            for m=1:notePropsCount
+                c = filteredProps(m).Centroid;
+                duration = 4;
+                if hasBeam; duration = 8; end
+                noteHeads = [noteHeads; struct("x", c(1,1), "y", c(1,2), "duration", duration)];
+            end
+            debugImage(y.start:y.end, x.start:x.end) = beamsAndHeads;
+        end
+        
+        
         % Use area to determine if it is filled
         % TODO: Are some note heads accidentally removed because of area
         %       or because they are smaller regions?
-
 %         %mask = imopen(mask, strel('disk', 7, 4));
 %         filledArea = sum(mask(:) == 1);
 %         areaRatio = filledArea / regionArea;
@@ -63,102 +160,14 @@ function [notes, debugImage] = parseNotes(staffStruct)
 %            % continue;
 %         end
         
-        
-        % Detect if note heads are potentially present at all
-        noteHeadSize = rowStep;
-        noteHeadMask = imclose(mask, strel('line', round(noteHeadSize*0.2), 0));    % Heal some gaps
-        %noteHeadMask = imopen(noteHeadMask, strel('line', round(noteHeadSize*0.75), 0));
-
-
-        % Note head detection
-        
-        %disp(noteHeadSize);
-        diskSize = round(rowStep/22 * 8);
-        %mask = imopen(mask, strel('line', round(noteHeadSize*0.5), 0));
-        %mask = imopen(mask, strel('disk', diskSize, 4));
-        
-        debugImage(y.start:y.end, x.start:x.end) = ~noteHeadMask;
-        
-%         sobh1 = imfilter(imageRegion, fspecial('sobel'));
-%         sobh2 = imfilter(imageRegion, -fspecial('sobel'));
-%         mask = (sobh1 > graythresh(sobh1)) | (sobh2 > graythresh(sobh2));
-%        % mask = imopen(mask, strel('line', 4, 0));
-%        % mask = imclose(mask, strel('disk', 7, 4));
-%         debugImage(y.start:y.end, x.start:x.end) = mask & isPotentialBeam;
-        %debugImage(y.start:y.end, x.start:x.end) = ~mask;
-
-        props = regionprops(mask, 'Centroid');
-        propscount = size(props, 1);
-        for m=1:propscount
-            centroid = props(m).Centroid;
-            cx = centroid(1,1) + x.start;
-            cy = centroid(1,2) + y.start;
-           
+        headCount = size(noteHeads, 1);
+        disp(headCount);
+        for m=1:headCount
             newNote = struct;
-            newNote.x = cx;
-            newNote.y = cy;
+            newNote.x = noteHeads(m).x + x.start;
+            newNote.y = noteHeads(m).y + y.start;
             newNote.pitch = "G1";
-            newNote.duration = 4;
-
-            notes = [notes; newNote];
-        end
-    end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    return;
-
-    
-    
-    
-    
-    
-    
-    
-    %% OLD STUFF NOT WORKING
-    image = staffStruct.image;
-    height = size(image, 1);
-    image(:, 1:round(height/2)) = 1;
-
-    % Make BW and extract notes without staff lines
-    noStaffs = removeStaff(image);
-
-    % Use regionprops and bwlabels to identify "potential" notes
-    [labels, labelCount] = bwlabel(noStaffs);
-
-    potentialNoteGroup = [];
-    notes = [];
-    for k=1:labelCount
-        potentialNoteGroup = labels;
-        potentialNoteGroup(labels ~= k) = 0;
-        noteHeads = extractNotes(potentialNoteGroup);
-
-        %Now we can get the position of each note head
-        noteProps = regionprops(noteHeads, 'Centroid');
-        noteCount = size(noteProps, 1);
-        if noteCount == 0
-            continue;
-        end
-
-        for k=1:size(noteProps, 1)
-            c = noteProps(k).Centroid;
-
-            newNote = struct;
-            newNote.y = c(1,2);
-            newNote.x = c(1,1);
-            newNote.pitch = "G1";
-            newNote.duration = 4;
+            newNote.duration = noteHeads(m).duration;
 
             [firstLine, fifthLine] = getStaffSplineCoordinates(staffStruct, newNote.x);
             localStaffHeight = fifthLine-firstLine;
@@ -173,10 +182,8 @@ function [notes, debugImage] = parseNotes(staffStruct)
             maxIndex = size(fourths, 2);
             pitch = min(maxIndex, max(1, -pitch+indexOffset));
             newNote.pitch = fourths(pitch);
-            isEight = false;
-            if isEight
+            if newNote.duration ~= 4
                 newNote.pitch = lower(newNote.pitch);
-                newNote.duration = 8; 
             end        
 
             notes = [notes; newNote];
