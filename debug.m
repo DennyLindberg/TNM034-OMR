@@ -34,7 +34,7 @@ for i=1:size(allStaffs, 1)
         staffs(j).image = removeStaff(staffs(j).image);
         [staffs(j).noteRegions, staffs(j).noteRegionsCount] = separateNotesUsingProjections(staffs(j).image);
          
-        if true
+        if false
             % DEBUG: Show individual regions
             for k=1:staffs(j).noteRegionsCount
                 r = staffs(j).noteRegions(k);
@@ -51,10 +51,22 @@ for i=1:size(allStaffs, 1)
     end
     
     
+    for j=1:staffCount
+        imshow(staffs(j).image); hold on;
+        staffs(j).notes = parseNotes(staffs(j));
+        notesCount = size(staffs(j).notes, 1);
+        
+        for k=1:notesCount
+            n = staffs(j).notes(k);
+            plot(n.x, n.y, '*', 'Color', 'Red'); 
+        end
+        hold off;
+        shg;
+        waitforbuttonpress;
+    end
     
     
-    
-    imshowpair(wholeImage, processedImage);
+   % imshowpair(wholeImage, processedImage);
     
     %imshow(processedImage);
     shg;
