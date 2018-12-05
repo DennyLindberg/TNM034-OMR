@@ -54,14 +54,16 @@ for i=1:size(allStaffs, 1)
     for j=1:staffCount
         
         [staffs(j).notes, debugImage] = parseNotes(staffs(j));
+        %imshow(debugImage);
         imshowpair(staffs(j).image, debugImage); hold on;
         
         notesCount = size(staffs(j).notes, 1);
-        for k=1:notesCount
-            n = staffs(j).notes(k);
-            plot(n.x, n.y, '*', 'Color', 'Red'); 
-        end
-        hold off;
+        %imshow(debugImage);
+%         for k=1:notesCount
+%             n = staffs(j).notes(k);
+%             plot(n.x, n.y, '*', 'Color', 'Red'); 
+%         end
+%         hold off;
         shg;
         waitforbuttonpress;
     end

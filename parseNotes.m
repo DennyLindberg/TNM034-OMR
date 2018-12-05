@@ -1,5 +1,6 @@
 function [notes, debugImage] = parseNotes(staffStruct)
     notes = [];
+    staffHeight = max(1, (staffStruct.bottom - staffStruct.top));
     staffImage = staffStruct.image;
     noteRegions = staffStruct.noteRegions;
     regionsCount = staffStruct.noteRegionsCount;
@@ -9,14 +10,82 @@ function [notes, debugImage] = parseNotes(staffStruct)
         r = noteRegions(k);
         x = r.x;
         y = r.y;
+        regionHeight = (y.end-y.start);
+        regionWidth = (x.end-x.start);
+        regionRatio = regionWidth / regionHeight;
+        regionMiddleX = x.start + round(regionWidth/2);
+        regionArea = regionWidth*regionHeight;
+        [staffPosition, staffFifthLine] = getStaffSplineCoordinates(staffStruct, regionMiddleX);
+        staffDistance = staffFifthLine - staffPosition;
+        rowStep = staffDistance/4;
         
         imageRegion = staffImage(y.start:y.end, x.start:x.end);
         
+        % Remove G-clef by estimating the left limit of the image based
+        % on the height of the staff
+        if x.start < staffHeight
+            continue;
+        end
+        
+        % Remove regions that are not tall enough
+        junkCutoffHeight = staffDistance*0.7;
+        if regionHeight < junkCutoffHeight
+           continue;
+        end
+        
+        % Remove if a region is too small (less than 4 note heads)
+        % TODO: Long duration notes without a stem are removed.
+        junkCutoffArea = rowStep^2 *4;
+        if regionArea < junkCutoffArea; continue; end
+        
+        % Remove very thin vertical lines
+        if regionRatio < 0.25; continue; end 
+        
+        
+        % Beam detection (may have false positives)
+       % regionRatio = regionWidth / regionHeight;
+        %isPotentialBeam = regionRatio > 0.6;
+        %%debugImage(y.start:y.end, x.start:x.end) = mask & isPotentialBeam;
+        
+        % Create mask
         mask = imsharpen(imageRegion, 'Radius', 10, 'Amount', 30);
         mask = mask < 0.98;
-        mask = imopen(mask, strel('disk', 7, 4));
         
-        debugImage(y.start:y.end, x.start:x.end) = ~mask;
+        % Use area to determine if it is filled
+        % TODO: Are some note heads accidentally removed because of area
+        %       or because they are smaller regions?
+
+%         %mask = imopen(mask, strel('disk', 7, 4));
+%         filledArea = sum(mask(:) == 1);
+%         areaRatio = filledArea / regionArea;
+%         %disp(filledArea + " / " + regionArea + " = " + areaRatio);
+%         if areaRatio > 0.4
+%            % continue;
+%         end
+        
+        
+        % Detect if note heads are potentially present at all
+        noteHeadSize = rowStep;
+        noteHeadMask = imclose(mask, strel('line', round(noteHeadSize*0.2), 0));    % Heal some gaps
+        %noteHeadMask = imopen(noteHeadMask, strel('line', round(noteHeadSize*0.75), 0));
+
+
+        % Note head detection
+        
+        %disp(noteHeadSize);
+        diskSize = round(rowStep/22 * 8);
+        %mask = imopen(mask, strel('line', round(noteHeadSize*0.5), 0));
+        %mask = imopen(mask, strel('disk', diskSize, 4));
+        
+        debugImage(y.start:y.end, x.start:x.end) = ~noteHeadMask;
+        
+%         sobh1 = imfilter(imageRegion, fspecial('sobel'));
+%         sobh2 = imfilter(imageRegion, -fspecial('sobel'));
+%         mask = (sobh1 > graythresh(sobh1)) | (sobh2 > graythresh(sobh2));
+%        % mask = imopen(mask, strel('line', 4, 0));
+%        % mask = imclose(mask, strel('disk', 7, 4));
+%         debugImage(y.start:y.end, x.start:x.end) = mask & isPotentialBeam;
+        %debugImage(y.start:y.end, x.start:x.end) = ~mask;
 
         props = regionprops(mask, 'Centroid');
         propscount = size(props, 1);
