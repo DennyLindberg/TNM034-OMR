@@ -129,11 +129,16 @@ function [notes, debugImage] = parseNotes(staffStruct)
             % well for filled notes.
             beamsAndHeadsRegion = imclose(beamsAndHeadsRegion, strel('disk', round(noteHeadHeight), 4));
             beamsAndHeadsRegion = imopen(beamsAndHeadsRegion, strel('disk', round(noteHeadHeight/3), 4));                        
-            headProps = regionprops(beamsAndHeadsRegion, 'Centroid');
+            headProps = regionprops(beamsAndHeadsRegion, 'Centroid', 'Area');
+            greatestArea = 0;
             for m=1:size(headProps, 1)
                 c = headProps(m).Centroid;
-                cx = c(1,1);
-                cy = c(1,2);
+                a = headProps(m).Area;
+                if a > greatestArea
+                    greatestArea = a;
+                    cx = c(1,1);
+                    cy = c(1,2);
+                end
             end
 
             if isQuarterNote

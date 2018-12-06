@@ -21,6 +21,73 @@ for i=1:size(imageFileNames, 2)
     allStaffs = [allStaffs; staffSet];
 end
 
+%% Improve mask generation
+for i=1:1:size(allStaffs, 1)
+    name = allStaffs(i).name;
+    staffs = allStaffs(i).staffs;
+    staffCount = allStaffs(i).count;
+    disp(name);
+    
+    image = vertcat(staffs.image);
+    %noStaff = removeStaff(wholeImage);
+
+    height = size(image, 1);
+    
+    imagep = image;
+    
+    % FEATURES
+    imagef = 1-imclose(image, strel('line', 8, 90)); % scale based on image
+    imagef = 1-imextendedmin(imagef, graythresh(imagef));
+    
+    % H LINES ONLY (without affecting features)
+    imageh = imclose(image, strel('line', 30, 0));
+    imageh = imerode(imageh, strel('line', 2, 90));
+    imageh = 1-((1-imagef) .* (1-imageh));
+    imageh = histeq(imageh);
+
+    % Remove H lines and emphasize shapes
+    imagep = 1-(imageh .* (1-image));
+    imagep(imagep > 0.95) = 1;
+    imagep = 1-imbinarize(histeq(imagep), 'global');
+    imagep = imclose(imagep, strel('disk', 3, 4));
+    imagep = imopen(imagep, strel('line', 1, 90));
+    imagep = bwareaopen(imagep, 20);
+    
+    
+%     imagep = 1-ordfilt2(imagep,30,true(10));
+%     maxval = max(imagep(:));
+%     imagep(imagep < maxval*0.1) = 0;
+%     imagep = imagep > 0;
+    %imagep = imagep > graythresh(imagep);
+    %imagep = histeq(imagep);
+%     
+    
+    
+    
+% 
+%     % Use morphological close on grayscale to weaken the horizontal lines
+%     image = imclose(image, strel('line', 10, 90));
+%      
+%     % Use 4-way sobel filter to extract strong shapes
+%     sobh1 = imfilter(image, fspecial('sobel')');
+%     sobh2 = imfilter(image, -fspecial('sobel')');
+%     sobv1 = imfilter(image, fspecial('sobel'));
+%     sobv2 = imfilter(image, -fspecial('sobel'));
+%     noStaffImage = (sobh1 > graythresh(sobh1)) | (sobh2 > graythresh(sobh2));
+%     noStaffImage = noStaffImage | (sobv1 > graythresh(sobv1)) | (sobv2 > graythresh(sobv2));
+%     
+%     % Melt sobel shapes together
+%     noStaffImage = imclose(noStaffImage, strel('disk', 15, 4));
+%         
+%     % Apply sobel shapes to original image so that only the important shapes remain
+%     image(~noStaffImage) = 1;
+    % noStaffImage = image;
+    
+    imshowpair(image, imagep, 'montage'); shg; waitforbuttonpress;
+end
+
+
+
 %% Staff by staff testing
 
 for i=1:1:size(allStaffs, 1)

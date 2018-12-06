@@ -190,7 +190,6 @@ staffNormalizedWidth = 2048;
 
 
 for i=1:staffCount
-    staffs(i).image = removeStaff(staffs(i).image);
     [staffs(i).noteRegions, staffs(i).noteRegionsCount] = separateNotesUsingProjections(staffs(i).image);
     staffs(i).notes = parseNotes(staffs(i));
 end
