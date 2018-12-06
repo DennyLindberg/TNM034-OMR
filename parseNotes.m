@@ -128,7 +128,7 @@ function [notes, debugImage] = parseNotes(staffStruct)
             % Attempt to get the proper center by using shape. This works
             % well for filled notes.
             beamsAndHeadsRegion = imclose(beamsAndHeadsRegion, strel('disk', round(noteHeadHeight), 4));
-            beamsAndHeadsRegion = imopen(beamsAndHeadsRegion, strel('disk', round(noteHeadHeight/3), 4));                        
+            beamsAndHeadsRegion = imopen(beamsAndHeadsRegion, strel('disk', round(noteHeadHeight/3), 4));     
             headProps = regionprops(beamsAndHeadsRegion, 'Centroid', 'Area');
             greatestArea = 0;
             for m=1:size(headProps, 1)
@@ -155,11 +155,17 @@ function [notes, debugImage] = parseNotes(staffStruct)
             % so we need to detect those.
             
             beamsAndHeadsRegion = beamsAndHeads(y.start:y.end, x.start:x.end);
-            beamsAndHeadsRegion = bwareaopen(beamsAndHeadsRegion, round((noteHeadHeight^2)/4)); % remove small objects
-             
+            beamsAndHeadsRegion = bwareaopen(beamsAndHeadsRegion, round((noteHeadHeight^2)/4)); % remove small objects                 
+            
             hasBeam = false;
             headProps = [];
-            noteProps = regionprops(beamsAndHeadsRegion, 'BoundingBox', 'Centroid');
+            noteProps = regionprops(beamsAndHeadsRegion, 'BoundingBox', 'Centroid', 'Eccentricity', 'Orientation');
+            % Eccentricity is used to check roundness of shapes.
+            % Orientation to exclude horizontal beams.
+            % Centroid for final location.
+            % Bounding box for width (thus a beam)
+            
+            % Look for beam
             for m=1:size(noteProps, 1)
                 bbox = noteProps(m).BoundingBox;
                 width = round(bbox(3));
@@ -171,14 +177,25 @@ function [notes, debugImage] = parseNotes(staffStruct)
                    headProps = [headProps; noteProps(m)];
                 end
             end
-            for m=1:size(headProps, 1)
-                c = headProps(m).Centroid;
-                if hasBeam
-                    noteHeads = [noteHeads; struct('x', c(1,1) + x.start, 'y', c(1,2) + y.start, 'duration', 8)];
-                else
+            
+            if hasBeam
+                for m=1:size(headProps, 1)
+                    c = headProps(m).Centroid;
+                    if abs(headProps(m).Orientation) > 3 && headProps(m).Eccentricity < 0.95
+                        noteHeads = [noteHeads; struct('x', c(1,1) + x.start, 'y', c(1,2) + y.start, 'duration', 8)];
+                    end
+                end
+            else
+                % We could have "single notes" that overlap.
+                % Clean up shapes and look for note heads.
+                beamsAndHeadsRegion = imopen(beamsAndHeadsRegion, strel('disk', round(noteHeadHeight/3), 4));  
+                noteProps = regionprops(beamsAndHeadsRegion, 'Centroid');
+                for m=1:size(noteProps, 1)
+                	c = noteProps(m).Centroid;
                     noteHeads = [noteHeads; struct('x', c(1,1) + x.start, 'y', c(1,2) + y.start, 'duration', 4)];
                 end
             end
+            
             debugImage(y.start:y.end, x.start:x.end) = beamsAndHeadsRegion;
         end
     end
