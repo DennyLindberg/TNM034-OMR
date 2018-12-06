@@ -89,6 +89,7 @@ function [individualStaffs, staffCount] = pp_splitStaffsBasedOnMasks(image, staf
 
         % Crop based on the new region
         staff = struct;
+        staff.id = i;
         staff.image = image(yBegin:yEnd, xBegin:xEnd);
         staff.staffMask = staffsMask(yBegin:yEnd, xBegin:xEnd); 
         staff.notesMask = notesMask(yBegin:yEnd, xBegin:xEnd); 

@@ -85,6 +85,7 @@ staffNormalizedWidth = 2048;
     % based on the masks.
     %
     % staff (struct)
+    %   .id             id represents the order of staff appearance from top to bottom
     %   .image          bitmap containing notes
     %   .staffMask      logical mask which wraps around the five major staff lines
     %   .notesMask      logical mask which also includes the notes hanging outside the staff
@@ -189,8 +190,8 @@ staffNormalizedWidth = 2048;
 
 
 for i=1:staffCount
-    staffs(j).image = removeStaff(staffs(j).image);
-    [staffs(j).noteRegions, staffs(j).noteRegionsCount] = separateNotesUsingProjections(staffs(j).image);
+    staffs(i).image = removeStaff(staffs(i).image);
+    [staffs(i).noteRegions, staffs(i).noteRegionsCount] = separateNotesUsingProjections(staffs(i).image);
     staffs(i).notes = parseNotes(staffs(i));
 end
     

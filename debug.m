@@ -23,7 +23,7 @@ end
 
 %% Staff by staff testing
 
-for i=1:size(allStaffs, 1)
+for i=1:1:size(allStaffs, 1)
     name = allStaffs(i).name;
     staffs = allStaffs(i).staffs;
     staffCount = allStaffs(i).count;
@@ -32,20 +32,21 @@ for i=1:size(allStaffs, 1)
     processedImage = [];
     wholeImage = vertcat(staffs.image);
     
-    for j=1:staffCount        
-
-        [staffs(j).noteRegions, staffs(j).noteRegionsCount] = separateNotesUsingProjections(staffs(j).image);
-         
+    for j=1:staffCount   
+        [staffs(j).noteRegions, staffs(j).noteRegionsCount] = separateNotesUsingProjections(staffs(j).image);    
         if false
+            temp = staffs(j).image;
             % DEBUG: Show individual regions
             for k=1:staffs(j).noteRegionsCount
                 r = staffs(j).noteRegions(k);
                 x = r.x;
                 y = r.y;
-                imshow(staffs(j).image(y.start:y.end, x.start:x.end));
-                shg;
-                waitforbuttonpress;
+                
+                temp(y.start:y.end, x.start:x.end) = 1-temp(y.start:y.end, x.start:x.end);
             end
+            imshow(temp);
+            shg;
+            waitforbuttonpress;
         end
         
         processedImage = vertcat(processedImage, staffs(j).image);
@@ -66,20 +67,22 @@ for i=1:size(allStaffs, 1)
         % DRAW DEBUG
         if true
             %imshow(debugImage); hold on;
-            imshow(1-staffs(j).image); hold on;
-            %imshowpair(staffs(j).image, debugImage); hold on;
-
-            notesCount = size(staffs(j).notes, 1);
-            for k=1:notesCount
-                n = staffs(j).notes(k);
-                plot(n.x, n.y, '*', 'Color', 'Red');
-                t = text(n.x, n.y, n.pitch, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
-                t.FontSize = 25;
-                t.FontWeight = 'bold';
-                if n.duration == 4
-                    t.Color = 'green';
-                else
-                    t.Color = 'magenta';
+            %imshow(1-staffs(j).image); hold on;
+            imshowpair(staffs(j).image, debugImage); hold on;
+            
+            if true
+                notesCount = size(staffs(j).notes, 1);
+                for k=1:notesCount
+                    n = staffs(j).notes(k);
+                    plot(n.x, n.y, '*', 'Color', 'Red');
+                    t = text(n.x, n.y, n.pitch, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+                    t.FontSize = 25;
+                    t.FontWeight = 'bold';
+                    if n.duration == 4
+                        t.Color = 'white';
+                    else
+                        t.Color = 'magenta';
+                    end
                 end
             end
             hold off;
@@ -88,10 +91,10 @@ for i=1:size(allStaffs, 1)
         end
     end
     disp(strout);
-    
-    imshow(processedImage);
-    shg;
-    waitforbuttonpress;
+%     
+%     imshow(processedImage);
+%     shg;
+%     waitforbuttonpress;
     
 end
 disp("Done");

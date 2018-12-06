@@ -6,13 +6,7 @@ function [noteRegions, noteRegionsCount] = separateNotesUsingProjections(staffIm
     % Create mask from it.
     maskForProjection = imsharpen(staffImage, 'Radius', 10, 'Amount', 30);
     maskForProjection = maskForProjection < 0.98;
-
-    % Remove scrap details
-    maskForProjection = bwareaopen(maskForProjection, round(height/2));
     maskForProjection = imdilate(maskForProjection, strel('disk', 1, 4));
-
-    % Small object removal for testing
-   % maskForProjection = bwareaopen(maskForProjection, height*15);
 
     noteRegions = [];
     noteRegionsCount = 0;
