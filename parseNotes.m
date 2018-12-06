@@ -9,7 +9,7 @@ function [notes, debugImage] = parseNotes(staffStruct)
     % Create a second image which greatly simplifies extracting the
     % note heads and beams.  
     beamsAndHeads = 1-staffStruct.image;
-    beamsAndHeads = ordfilt2(beamsAndHeads,30,true(10)); % flatten noise (bit blurry)
+    beamsAndHeads = ordfilt2(beamsAndHeads,35,true(10)); % flatten noise (bit blurry)
     beamsAndHeads = 1-imextendedmin(beamsAndHeads, graythresh(beamsAndHeads));
     beamsAndHeads = imdilate(beamsAndHeads, strel('disk', 1, 4)); % connect nearby components
     
