@@ -129,27 +129,34 @@ function [notes, debugImage] = parseNotes(staffStruct)
             % well for filled notes.
             beamsAndHeadsRegion = imclose(beamsAndHeadsRegion, strel('disk', round(noteHeadHeight), 4));
             beamsAndHeadsRegion = imopen(beamsAndHeadsRegion, strel('disk', round(noteHeadHeight/3), 4));     
-            headProps = regionprops(beamsAndHeadsRegion, 'Centroid', 'Area');
+            headProps = regionprops(beamsAndHeadsRegion, 'Centroid', 'Area', 'Orientation');
             greatestArea = 0;
+            
+            orientation = 0;
             for m=1:size(headProps, 1)
                 c = headProps(m).Centroid;
                 a = headProps(m).Area;
+                
                 if a > greatestArea
+                    orientation = abs(headProps(m).Orientation); 
+
                     greatestArea = a;
                     cx = c(1,1);
                     cy = c(1,2);
                 end
             end
-
-            if isQuarterNote
-                noteHeads = [noteHeads; struct('x', cx + x.start, 'y', cy + y.start, 'duration', 4)];
-            else
-                noteHeads = [noteHeads; struct('x', cx + x.start, 'y', cy + y.start, 'duration', 8)];
+            
+            % eliminate vertically oriented props. The heads are typically
+            % around 30-60 degrees.
+            if orientation < 80 
+                if isQuarterNote
+                    noteHeads = [noteHeads; struct('x', cx + x.start, 'y', cy + y.start, 'duration', 4)];
+                else
+                    noteHeads = [noteHeads; struct('x', cx + x.start, 'y', cy + y.start, 'duration', 8)];
+                end
+                
+                debugImage(y.start:y.end, x.start:x.end) = beamsAndHeadsRegion;
             end
-            
-            debugImage(y.start:y.end, x.start:x.end) = beamsAndHeadsRegion;
-            
-            
         elseif potentialBeam
             % There are some notes that stick together and are not beams,
             % so we need to detect those.
