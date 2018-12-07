@@ -1,4 +1,4 @@
-function [strout] = tnm034(im)
+function strout = tnm034(im)
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 % Im: Inputimage of captured sheet music. Im should be in
 % double format, normalized to the interval [0,1]

@@ -1,14 +1,14 @@
 function [notes, debugImage] = parseNotes(staffStruct)
     notes = [];
     staffHeight = max(1, (staffStruct.bottom - staffStruct.top));
-    staffImage = removeStaff(staffStruct.image);
+    staffImage = removeStaffv2(staffStruct.image);
 
     noteRegions = staffStruct.noteRegions;
     regionsCount = staffStruct.noteRegionsCount;
     
     % Create a second image which greatly simplifies extracting the
     % note heads and beams.  
-    beamsAndHeads = 1-staffStruct.image;
+    beamsAndHeads = 1-staffImage;
     beamsAndHeads = ordfilt2(beamsAndHeads,35,true(10)); % flatten noise (bit blurry)
     beamsAndHeads = 1-imextendedmin(beamsAndHeads, graythresh(beamsAndHeads));
     beamsAndHeads = imdilate(beamsAndHeads, strel('disk', 1, 4)); % connect nearby components
