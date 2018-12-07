@@ -8,7 +8,7 @@ allStaffs = [];
 for i=1:size(imageFileNames, 2)
     disp(imageFileNames(i));
     original = im2double(imread(folder + imageFileNames(i)));
-    [noteStr, staffs] = tnm034(original);
+    [noteStr] = tnm034(original);
     
     disp(noteStr);
     
@@ -16,11 +16,11 @@ for i=1:size(imageFileNames, 2)
 %     shg;
 %     waitforbuttonpress;
     
-    staffSet = struct;
-    staffSet.name = imageFileNames(i);
-    staffSet.staffs = staffs;
-    staffSet.count = size(staffs, 1);
-    allStaffs = [allStaffs; staffSet];
+%     staffSet = struct;
+%     staffSet.name = imageFileNames(i);
+%     staffSet.staffs = staffs;
+%     staffSet.count = size(staffs, 1);
+%     allStaffs = [allStaffs; staffSet];
 end
 
 
