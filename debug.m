@@ -26,6 +26,7 @@ end
 
 
 %% Staff by staff testing
+template = im2double(rgb2gray(imread('Images/template_closed.jpg')));
 
 for i=1:1:size(allStaffs, 1)
     name = allStaffs(i).name;
@@ -35,6 +36,19 @@ for i=1:1:size(allStaffs, 1)
     
     processedImage = [];
     wholeImage = vertcat(staffs.image);
+%     
+%     [peaks, correlation] = findCorrelationPeaks(wholeImage, template, 0.7);
+%     imshowpair(1-wholeImage, correlation);
+%     hold on;
+%     for k=1:size(peaks,1)
+%         p = peaks(k, :);
+%         plot(p(1), p(2), '*', 'Color', 'red');
+%     end
+%     hold off;
+%     %imshow(cSeg);
+% 
+%     waitforbuttonpress;
+%     continue;
     
     for j=1:staffCount   
         [staffs(j).noteRegions, staffs(j).noteRegionsCount] = separateNotesUsingProjections(staffs(j).image);    

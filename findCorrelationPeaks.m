@@ -1,16 +1,18 @@
-function [peaks, correlation] = findCorrelationPeaks(image, template, limit)
+function [peaks, maxCorrelation] = findCorrelationPeaks(image, template, limit)
     correlation = normxcorr2(template, image);
     
-    xOffset = floor(size(template,2)/2)-1;
-    yOffset = floor(size(template,1)/2)-1;
+    xOffset = max(1, floor(size(template,2)/2)-1);
+    yOffset = max(1, floor(size(template,1)/2)-1);
     
+    xStart = xOffset;
+    yStart = yOffset;
     xEnd = size(image,2) + xOffset;
     yEnd = size(image,1) + yOffset;
     
     
-    correlation = correlation(yOffset:yEnd, xOffset:xEnd);
-    maxVal = max(correlation(:));
-    correlation = correlation > maxVal*limit;
+    correlation = correlation(yStart:yEnd, xStart:xEnd);
+    maxCorrelation = max(correlation(:));
+    correlation = correlation > maxCorrelation*limit;
     
     corrProps = regionprops(correlation, 'Centroid');
     peaks = [];
