@@ -7,8 +7,10 @@ combinedImages = [];
 allStaffs = [];
 for i=1:size(imageFileNames, 2)
     disp(imageFileNames(i));
-    original = imread(folder + imageFileNames(i));
+    original = im2double(imread(folder + imageFileNames(i)));
     [noteStr, staffs] = tnm034(original);
+    
+    disp(noteStr);
     
 %     imshow(notes);
 %     shg;
@@ -148,7 +150,7 @@ for i=1:1:size(allStaffs, 1)
                     if n.duration == 4
                         t.Color = 'white';
                     else
-                        t.Color = 'magenta';
+                        t.Color = 'white';
                     end
                 end
             end

@@ -1,4 +1,4 @@
-function [strout, staffs] = tnm034(im)
+function [strout] = tnm034(im)
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 % Im: Inputimage of captured sheet music. Im should be in
 % double format, normalized to the interval [0,1]
@@ -184,8 +184,6 @@ staffNormalizedWidth = 2048;
             w = waitforbuttonpress;
         end
     end
-    
-
     
 
 

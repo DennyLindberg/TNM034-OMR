@@ -131,7 +131,6 @@ function [notes, debugImage] = parseNotes(staffStruct)
             beamsAndHeadsRegion = imopen(beamsAndHeadsRegion, strel('disk', round(noteHeadHeight/3), 4));     
             headProps = regionprops(beamsAndHeadsRegion, 'Centroid', 'Area', 'Orientation');
             greatestArea = 0;
-            
             orientation = 0;
             for m=1:size(headProps, 1)
                 c = headProps(m).Centroid;
@@ -173,6 +172,7 @@ function [notes, debugImage] = parseNotes(staffStruct)
             % Bounding box for width (thus a beam)
             
             % Look for beam
+            
             for m=1:size(noteProps, 1)
                 bbox = noteProps(m).BoundingBox;
                 width = round(bbox(3));
@@ -180,15 +180,19 @@ function [notes, debugImage] = parseNotes(staffStruct)
                    % Determine midpoint and filter the others so that
                    % other beams are not miss-registered.
                    hasBeam = true; 
-                else
-                   headProps = [headProps; noteProps(m)];
+                   break;
                 end
             end
             
             if hasBeam
-                for m=1:size(headProps, 1)
-                    c = headProps(m).Centroid;
-                    if abs(headProps(m).Orientation) > 3 && headProps(m).Eccentricity < 0.95
+                for m=1:size(noteProps, 1)
+                    c = noteProps(m).Centroid;
+                    bbox = noteProps(m).BoundingBox;
+                    width = round(bbox(3));
+                    shortEnough = width < rowStep*1.75;
+                    roundEnough = noteProps(m).Eccentricity < 0.95;
+                    notHorizontal = abs(noteProps(m).Orientation) > 3;
+                    if shortEnough && roundEnough && notHorizontal
                         noteHeads = [noteHeads; struct('x', c(1,1) + x.start, 'y', c(1,2) + y.start, 'duration', 8)];
                     end
                 end
