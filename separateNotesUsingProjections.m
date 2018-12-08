@@ -1,5 +1,5 @@
 function [noteRegions, noteRegionsCount] = separateNotesUsingProjections(staffImage)
-    staffImage = removeStaffv2(staffImage);
+    staffImage = removeStaff(staffImage);
     height = size(staffImage, 1);
 
     % Abuse imsharpen so that dark and white regions separate.

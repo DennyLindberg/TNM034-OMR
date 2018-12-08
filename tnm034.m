@@ -188,7 +188,7 @@ end
 % Split symbols and attempt to identify notes. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i=1:staffCount
-    [staffs(i).noteRegions, staffs(i).noteRegionsCount] = separateNotesUsingProjections(staffs(i).image);
+    [staffs(i).noteRegions, staffs(i).noteRegionsCount] = separateNotesUsingProjections(staffs(i).image);    
     staffs(i).notes = parseNotes(staffs(i));
 end
     

@@ -8,19 +8,20 @@ allStaffs = [];
 for i=1:size(imageFileNames, 2)
     disp(imageFileNames(i));
     original = im2double(imread(folder + imageFileNames(i)));
-    [noteStr] = tnm034(original);
+    [noteStr, staffs] = tnm034(original);
     
     disp(noteStr);
     
 %     imshow(notes);
 %     shg;
 %     waitforbuttonpress;
-    
-%     staffSet = struct;
-%     staffSet.name = imageFileNames(i);
-%     staffSet.staffs = staffs;
-%     staffSet.count = size(staffs, 1);
-%     allStaffs = [allStaffs; staffSet];
+    if exist('staffs','var')
+        staffSet = struct;
+        staffSet.name = imageFileNames(i);
+        staffSet.staffs = staffs;
+        staffSet.count = size(staffs, 1);
+        allStaffs = [allStaffs; staffSet];
+    end
 end
 
 
@@ -36,8 +37,8 @@ for i=1:1:size(allStaffs, 1)
     
     processedImage = [];
     wholeImage = vertcat(staffs.image);
-%     
-%     [peaks, correlation] = findCorrelationPeaks(wholeImage, template, 0.7);
+    
+%     [peaks, correlation] = findCorrelationPeaks(wholeImage, template, 0.8);
 %     imshowpair(1-wholeImage, correlation);
 %     hold on;
 %     for k=1:size(peaks,1)
@@ -45,8 +46,8 @@ for i=1:1:size(allStaffs, 1)
 %         plot(p(1), p(2), '*', 'Color', 'red');
 %     end
 %     hold off;
-%     %imshow(cSeg);
-% 
+    %imshow(cSeg);
+
 %     waitforbuttonpress;
 %     continue;
     
@@ -54,6 +55,7 @@ for i=1:1:size(allStaffs, 1)
         [staffs(j).noteRegions, staffs(j).noteRegionsCount] = separateNotesUsingProjections(staffs(j).image);    
         if false
             temp = staffs(j).image;
+            
             % DEBUG: Show individual regions
             for k=1:staffs(j).noteRegionsCount
                 r = staffs(j).noteRegions(k);
@@ -62,7 +64,17 @@ for i=1:1:size(allStaffs, 1)
                 
                 temp(y.start:y.end, x.start:x.end) = 1-temp(y.start:y.end, x.start:x.end);
             end
+            
+            
             imshow(temp);
+%             hold on;
+%             for k=1:size(peaks,1)
+%                 p = peaks(k, :);
+%                 plot(p(1), p(2), '*', 'Color', 'red');
+%             end
+%             hold off;
+
+            
             shg;
             waitforbuttonpress;
         end
