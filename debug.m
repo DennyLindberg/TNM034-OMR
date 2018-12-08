@@ -8,7 +8,8 @@ allStaffs = [];
 for i=1:size(imageFileNames, 2)
     disp(imageFileNames(i));
     original = im2double(imread(folder + imageFileNames(i)));
-    [noteStr, staffs] = tnm034(original);
+    %[noteStr, staffs] = tnm034(original);
+    noteStr = tnm034(original);
     
     disp(noteStr);
     
@@ -23,11 +24,12 @@ for i=1:size(imageFileNames, 2)
         allStaffs = [allStaffs; staffSet];
     end
 end
-
+disp("finished");
 
 
 %% Staff by staff testing
 template = im2double(rgb2gray(imread('Images/template_closed.jpg')));
+
 
 for i=1:1:size(allStaffs, 1)
     name = allStaffs(i).name;
@@ -83,12 +85,16 @@ for i=1:1:size(allStaffs, 1)
     end
     
     strout = "";
+    
     for j=1:staffCount
+        staffstr = "";
         [staffs(j).notes, debugImage] = parseNotes(staffs(j));
         notes = staffs(j).notes;
         for k=1:size(notes, 1)
-            strout = strout + notes(k).pitch;
+            staffstr = staffstr + notes(k).pitch;
         end
+        strout = strout+staffstr;
+        disp("Staff " + j + ": " + staffstr);
         if j < staffCount
             strout = strout + "n";
         end
@@ -98,20 +104,20 @@ for i=1:1:size(allStaffs, 1)
         if true
             %imshow(debugImage); hold on;
             %imshow(1-staffs(j).image); hold on;
-            imshowpair(staffs(j).image, debugImage); hold on;
+            imshow(staffs(j).image); hold on;
             
             if true
                 notesCount = size(staffs(j).notes, 1);
                 for k=1:notesCount
                     n = staffs(j).notes(k);
                     plot(n.x, n.y, '*', 'Color', 'Red');
-                    t = text(n.x, n.y, n.pitch, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
-                    t.FontSize = 25;
+                    t = text(n.x, n.y, k + n.pitch, 'HorizontalAlignment', 'right', 'VerticalAlignment', 'middle');
+                    t.FontSize = 14;
                     t.FontWeight = 'bold';
                     if n.duration == 4
-                        t.Color = 'white';
+                        t.Color = 'red';
                     else
-                        t.Color = 'white';
+                        t.Color = 'magenta';
                     end
                 end
             end
@@ -120,7 +126,7 @@ for i=1:1:size(allStaffs, 1)
             waitforbuttonpress;
         end
     end
-    disp(strout);
+    disp("allStaffs: " + strout);
 %     
 %     imshow(processedImage);
 %     shg;

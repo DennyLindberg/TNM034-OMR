@@ -1,4 +1,10 @@
 function [notes, debugImage] = parseNotes(staffStruct)
+    % This method attempts to detect notes, chords and durations by
+    % breaking down each symbol region into sub-problems. Many steps
+    % use exclusion rules via deductive reasoning. Whenever a 'continue' 
+    % statement appears in the main loop, it means a symbol is scrapped
+    % for not having the characteristics necessary to have notes in it.
+
     notes = [];
     noteHeads = [];
     staffHeight = max(1, (staffStruct.bottom - staffStruct.top));
@@ -79,7 +85,6 @@ function [notes, debugImage] = parseNotes(staffStruct)
         if staffStruct.id == 1 && x.start < staffHeight*1.25 || staffStruct.id ~= 1 && x.start < staffHeight
             continue;
         end      
-
         
         % Precalculate reference values
         regionHeight = (y.end-y.start);
@@ -91,6 +96,10 @@ function [notes, debugImage] = parseNotes(staffStruct)
         staffDistance = staffFifthLine - staffPosition;
         rowStep = staffDistance/4;
         noteHeadHeight = rowStep;
+        
+        % Merge correlation points in region that are too close to each other.
+        % (otherwise there might appear multiple notes on the same spot)
+        r.correlationPeaks = mergeCorrelationClusters(r.correlationPeaks, noteHeadHeight*0.9);
         
         if regionWidth < noteHeadHeight
             continue; % Throw away very thin regions
@@ -177,12 +186,19 @@ function [notes, debugImage] = parseNotes(staffStruct)
                continue; 
             end
             
+
             
-            p = r.correlationPeaks;
-            if size(p,1) > 1
+            
+            if size(r.correlationPeaks,1) > 1
                 % We have a chord, use the less precise correlation peaks
                 % to get the heads. Does not support quaver detection.
-                % TODO: Detect quaver for chords
+                % TODO: Detect quaver for chords.
+                
+                % Sort the props top to bottom. (this is a single chord
+                % and left to right doesn't matter)
+                p = r.correlationPeaks;
+                [sorted, sort_order] = sort(p(:, 2), 'ascend');
+                p = p(sort_order, :);
                 for m=1:size(p,1)
                     noteHeads = [noteHeads; struct('x', p(m,1), 'y', p(m,2), 'duration', 4)];
                 end
@@ -224,7 +240,7 @@ function [notes, debugImage] = parseNotes(staffStruct)
             
             hasBeam = false;
             [noteLabels, labelCount] = bwlabel(beamsAndHeadsRegion);
-            noteProps = regionprops(noteLabels, 'BoundingBox');
+            noteProps = regionprops(noteLabels, 'BoundingBox', 'Centroid');
             
             % Look for beam and erase it from mask
             for m=1:size(noteProps, 1)
@@ -237,35 +253,47 @@ function [notes, debugImage] = parseNotes(staffStruct)
                 end
             end
 
-            % Use correlation to "pick" which remaining masks should be
-            % kept so that we can use the high precision picking.
+            % Use correlation points combined with the individual shapes
+            % to determine if shape center or correlation center should be
+            % used to define a note.
             p = r.correlationPeaks;
+            duration = 4;
+            if hasBeam; duration = 8; end
             for m=1:labelCount
-                hasCorrelation = false;
+                correlationMatches = [];
                 maskElement = beamsAndHeadsRegion;
                 maskElement(noteLabels~=m) = 0;
                 for n=1:size(p,1)
+                    % Determine how many correlation points are inside
+                    % the current mask shape.
                     if maskElement(round(p(n,2)-y.start), round(p(n,1)-x.start))
-                        hasCorrelation = true;
-                        break;
+                        correlationMatches = [correlationMatches; p(n,1), p(n,2)];
                     end
                 end
-                if ~hasCorrelation
+                numberOfMatches = size(correlationMatches, 1);
+                
+                if numberOfMatches == 0
+                    % No correlation points. This shape can be skipped.
                     beamsAndHeadsRegion(noteLabels==m) = 0;
-                end
-            end
-            
-            % Now use the remaining props to determine the note location.
-            noteProps = regionprops(beamsAndHeadsRegion, 'Centroid');
-            for m=1:size(noteProps, 1)
-                c = noteProps(m).Centroid;
-                if hasBeam
-                    noteHeads = [noteHeads; struct('x', c(1,1) + x.start, 'y', c(1,2) + y.start, 'duration', 8)];
+                    
+                elseif numberOfMatches == 1
+                    % One match, use the shape centroid instead of 
+                    % correlation for better precision.
+                    c = noteProps(m).Centroid;
+                    noteHeads = [noteHeads; struct('x', c(1,1) + x.start, 'y', c(1,2) + y.start, 'duration', duration)];
+                    
                 else
-                    noteHeads = [noteHeads; struct('x', c(1,1) + x.start, 'y', c(1,2) + y.start, 'duration', 4)];
-                end
+                    % If multiple correlations we might have a
+                    % chord that blended together in the mask.
+                    % Use correlation points instead. (sort them first)
+                    correlationMatches = sortrows(correlationMatches, [2,1], 'ascend');
+                    for n=1:size(correlationMatches,1)
+                        match = correlationMatches(n,:);
+                        noteHeads = [noteHeads; struct('x', match(1), 'y', match(2), 'duration', duration)];
+                    end
+                end  
             end
-            
+
             debugImage(y.start:y.end, x.start:x.end) = beamsAndHeadsRegion;
         end
     end

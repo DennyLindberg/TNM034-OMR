@@ -226,12 +226,15 @@ function [tform, hasPerspective] = pp_estimatePerspectiveTransform(staffsMask)
         orthogonalPoints = [orthogonalPoints; adjustedStaffs(j).x1, adjustedStaffs(j).y1; adjustedStaffs(j).x2, adjustedStaffs(j).y2];
     end
     
-    % Return the estimated perspective transform
-    pPointsValid = ~any(isnan(perspectivePoints(:)));
-    oPointsValid = ~any(isnan(orthogonalPoints(:)));
-    hasPerspective = pPointsValid && oPointsValid;
+    % Return the estimated perspective transform if transform points are
+    % valid. (try catch handles faulty perspectives)
     if hasPerspective
-        tform = fitgeotrans(orthogonalPoints, perspectivePoints, 'projective');
+        try
+            tform = fitgeotrans(orthogonalPoints, perspectivePoints, 'projective');
+        catch
+            hasPerspective = false;
+            tform = projective2d;
+        end
     end
 end
 
