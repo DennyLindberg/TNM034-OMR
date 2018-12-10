@@ -8,8 +8,8 @@ allStaffs = [];
 for i=1:size(imageFileNames, 2)
     disp(imageFileNames(i));
     original = im2double(imread(folder + imageFileNames(i)));
-    %[noteStr, staffs] = tnm034(original);
-    noteStr = tnm034(original);
+    [noteStr, staffs] = tnm034(original);
+   % noteStr = tnm034(original);
     
     disp(noteStr);
     

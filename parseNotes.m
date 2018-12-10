@@ -80,9 +80,8 @@ function [notes, debugImage] = parseNotes(staffStruct)
         x = r.x;
         y = r.y;        
         
-        % Remove G-clef or numbers behind it by estimating the left limit 
-        % of the image based on the height of the staff
-        if staffStruct.id == 1 && x.start < staffHeight*1.25 || staffStruct.id ~= 1 && x.start < staffHeight
+        % Remove G-clef estimating the left limit of the image based on the height of the staff
+        if k == 1 && x.start < staffHeight
             continue;
         end      
         
