@@ -1,6 +1,6 @@
 %% Run tnm034 for all images
 folder = 'Images/';
-dirOutput = dir(fullfile('Images/*.jpg'));
+dirOutput = dir(fullfile('Images/im8c.jpg'));
 imageFileNames = string({dirOutput.name});
 
 combinedImages = [];
@@ -8,8 +8,8 @@ allStaffs = [];
 for i=1:size(imageFileNames, 2)
     disp(imageFileNames(i));
     original = im2double(imread(folder + imageFileNames(i)));
-    %[noteStr, staffs] = tnm034(original);
-    noteStr = tnm034(original);
+    [noteStr, staffs] = tnm034(original);
+    %noteStr = tnm034(original);
     
     disp(noteStr);
     
@@ -101,21 +101,21 @@ for i=1:1:size(allStaffs, 1)
         if true
             %imshow(debugImage); hold on;
             %imshow(1-staffs(j).image); hold on;
-            imshow(staffs(j).image); hold on;
+            imshow(1-(1-staffs(j).image)*0.2); hold on;
             
             if true
                 notesCount = size(staffs(j).notes, 1);
                 for k=1:notesCount
                     n = staffs(j).notes(k);
-                    plot(n.x, n.y, '*', 'Color', 'Red');
-                    t = text(n.x, n.y, k + n.pitch, 'HorizontalAlignment', 'right', 'VerticalAlignment', 'middle');
-                    t.FontSize = 14;
+                    %plot(n.x, n.y, '*', 'Color', 'Red');
+                    t = text(n.x, n.y, n.pitch, 'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle');
+                    t.FontSize = 24;
                     t.FontWeight = 'bold';
-                    if n.duration == 4
-                        t.Color = 'red';
-                    else
-                        t.Color = 'magenta';
-                    end
+                   % if n.duration == 4
+                        t.Color = 'black';
+                    %else
+                    %    t.Color = 'magenta';
+                    %end
                 end
             end
             hold off;
