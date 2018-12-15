@@ -1,4 +1,4 @@
-function [strout, staffs] = tnm034(im)
+function strout = tnm034(im)
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 % Im: Inputimage of captured sheet music. Im should be in
 % double format, normalized to the interval [0,1]
@@ -17,9 +17,6 @@ staffNormalizedWidth = 2048;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load image and remove background
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%original = imread(imagePath);
-%originalgray = im2double(rgb2gray(original)); 
-%[notes, region] = pp_removeBackground(originalgray);   
 [notes, region] = pp_removeBackground(im2double(rgb2gray(im)));
 notes = notes(region(2):region(4), region(1):region(3));
 

@@ -21,7 +21,7 @@ function [notes, debugImage] = parseNotes(staffStruct)
     % (throw away regions that do not have a correlation peak with the
     % note head template)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    template = im2double(rgb2gray(imread('Images/template_closed.jpg')));
+    template = im2double(rgb2gray(imread('Templates/template_closed.jpg')));
     [peaks, correlations, cutoff, correlationMax] = findCorrelationPeaks(staffStruct.image, template, 0.8);
     filteredRegions = [];
     for k=1:regionsCount

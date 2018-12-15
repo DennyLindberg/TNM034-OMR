@@ -15,8 +15,9 @@ function [alpha] = pp_getLinesBySearchAngle(image, searchAngle, angleStepSize, l
     
     % Aggressively increase contrast in image (push midtones to extremes)
     lines = histeq(image);
-    lines = imadjust(lines, [graythresh(lines) 1.0]);
-    lines = imadjust(lines, [0.0 graythresh(lines)]);
+    threshold = max(0.01, min(0.99, graythresh(lines)));
+    lines = imadjust(lines, [threshold 1.0]);
+    lines = imadjust(lines, [0.0 threshold]);
     
     % Make lines a logical bitmap (it is multiple times faster for
     % morphological operations)

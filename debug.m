@@ -1,6 +1,6 @@
 %% Run tnm034 for all images
 folder = 'Images/';
-dirOutput = dir(fullfile('Images/im*.jpg'));
+dirOutput = dir(fullfile('Images/*.jpg'));
 imageFileNames = string({dirOutput.name});
 
 combinedImages = [];
@@ -8,8 +8,8 @@ allStaffs = [];
 for i=1:size(imageFileNames, 2)
     disp(imageFileNames(i));
     original = im2double(imread(folder + imageFileNames(i)));
-    [noteStr, staffs] = tnm034(original);
-   % noteStr = tnm034(original);
+    %[noteStr, staffs] = tnm034(original);
+    noteStr = tnm034(original);
     
     disp(noteStr);
     
@@ -28,9 +28,6 @@ disp("finished");
 
 
 %% Staff by staff testing
-template = im2double(rgb2gray(imread('Images/template_closed.jpg')));
-
-
 for i=1:1:size(allStaffs, 1)
     name = allStaffs(i).name;
     staffs = allStaffs(i).staffs;
